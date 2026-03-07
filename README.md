@@ -22,11 +22,6 @@ A fast, beautifully designed, offline-first currency converter built for travele
 
 Since this is a client-side only application, no build steps or backend servers are required.
 
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git)
-Open index.html in any modern web browser.
-
 To test PWA installation features locally, serve the directory via a local web server (e.g., using Python's http.server or Node's http-server).
 
 📱 Mobile Installation
