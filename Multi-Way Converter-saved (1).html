@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Multi-Way Currency Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            light: '#3b82f6',
+                            dark: '#60a5fa',
+                            accent: '#f59e0b'
+                        },
+                        bg: {
+                            light: '#f8fafc',
+                            dark: '#0f172a'
+                        },
+                        card: {
+                            light: '#ffffff',
+                            dark: '#1e293b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains+Mono', 'monospace']
+                    },
+                    animation: {
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'fade-in': 'fadeIn 0.2s ease-in'
+                    },
+                    keyframes: {
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' }
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.8);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .currency-input:focus {
+            outline: none;
+        }
+        /* Custom Keyboard Shadow */
+        .key-shadow {
+            box-shadow: 0 4px 0px 0px rgba(0,0,0,0.1);
+        }
+        .key-shadow:active {
+            box-shadow: 0 1px 0px 0px rgba(0,0,0,0.1);
+            transform: translateY(2px);
+        }
+    </style>
+</head>
+<body class="bg-bg-light dark:bg-bg-dark text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-teal-500 dark:from-blue-400 dark:to-teal-300">
+                Multi-Way Convert
+            </h1>
+            <div id="offline-status" class="text-[10px] font-medium text-amber-600 dark:text-amber-400 mt-0.5 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                Offline: Rates cached 2h ago
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="handleReset()" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" title="Reset Inputs">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            </button>
+            <button onclick="toggleTheme()" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <span id="theme-icon-sun" class="hidden dark:block">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                </span>
+                <span id="theme-icon-moon" class="block dark:hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                </span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-32 px-4 max-w-2xl mx-auto min-h-screen">
+        <div id="currency-list" class="space-y-4">
+            <!-- Rows injected by JS -->
+        </div>
+
+        <!-- Add Currency Trigger -->
+        <div class="mt-8 flex justify-center">
+            <button onclick="openCurrencyModal()" class="flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition-all border border-slate-200 dark:border-slate-700 text-sm font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                Add More Currencies
+            </button>
+        </div>
+    </main>
+
+    <!-- Floating Action Button -->
+    <button onclick="openCurrencyModal()" class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg shadow-blue-500/30 flex items-center justify-center transition-transform active:scale-90 z-40 md:hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+
+    <!-- Smart Numeric Keyboard -->
+    <div id="smart-keyboard" class="fixed bottom-0 left-0 right-0 glass border-t border-slate-200 dark:border-slate-800 transform translate-y-full transition-transform duration-300 z-[60] pb-safe">
+        <div class="max-w-md mx-auto p-4 grid grid-cols-4 gap-2">
+            <!-- Keyboard Header/Display for expression -->
+            <div class="col-span-4 mb-2 px-2 py-1 bg-slate-100 dark:bg-slate-900/50 rounded-lg flex justify-between items-center">
+                <span id="kb-expression" class="text-xs font-mono text-slate-500 dark:text-slate-400 overflow-hidden text-ellipsis whitespace-nowrap"></span>
+                <button onclick="closeKeyboard()" class="p-1 text-slate-400 hover:text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+            </div>
+            
+            <button onclick="kbPress('7')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">7</button>
+            <button onclick="kbPress('8')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">8</button>
+            <button onclick="kbPress('9')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">9</button>
+            <button onclick="kbPress('/')" class="h-14 rounded-xl bg-slate-100 dark:bg-slate-800 text-blue-500 font-bold text-xl key-shadow border border-slate-200 dark:border-slate-700">/</button>
+            
+            <button onclick="kbPress('4')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">4</button>
+            <button onclick="kbPress('5')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">5</button>
+            <button onclick="kbPress('6')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">6</button>
+            <button onclick="kbPress('*')" class="h-14 rounded-xl bg-slate-100 dark:bg-slate-800 text-blue-500 font-bold text-xl key-shadow border border-slate-200 dark:border-slate-700">×</button>
+            
+            <button onclick="kbPress('1')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">1</button>
+            <button onclick="kbPress('2')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">2</button>
+            <button onclick="kbPress('3')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">3</button>
+            <button onclick="kbPress('-')" class="h-14 rounded-xl bg-slate-100 dark:bg-slate-800 text-blue-500 font-bold text-xl key-shadow border border-slate-200 dark:border-slate-700">-</button>
+            
+            <button onclick="kbPress('0')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">0</button>
+            <button onclick="kbPress('.')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">.</button>
+            <button onclick="kbClear()" class="h-14 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-500 font-bold key-shadow border border-rose-100 dark:border-rose-900/30">C</button>
+            <button onclick="kbPress('+')" class="h-14 rounded-xl bg-slate-100 dark:bg-slate-800 text-blue-500 font-bold text-xl key-shadow border border-slate-200 dark:border-slate-700">+</button>
+
+            <button onclick="kbBackspace()" class="col-span-1 h-14 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center key-shadow border border-slate-200 dark:border-slate-700">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+            </button>
+            <button onclick="kbEvaluate()" class="col-span-3 h-14 rounded-xl bg-blue-600 text-white font-bold text-xl key-shadow shadow-blue-500/20">=</button>
+        </div>
+    </div>
+
+    <!-- Currency Selection Modal -->
+    <div id="currency-modal" class="fixed inset-0 z-[70] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeCurrencyModal()"></div>
+        <div class="relative w-full max-w-md bg-card-light dark:bg-card-dark rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <h3 class="text-lg font-bold">Add Currency</h3>
+                <button onclick="closeCurrencyModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-4 max-h-[60vh] overflow-y-auto no-scrollbar space-y-2" id="modal-currency-list">
+                <!-- Selectable currencies injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data & State
+        const mockRates = {
+            "USD": 1.0,
+            "MXN": 17.05,
+            "EUR": 0.925,
+            "CRC": 510.25,
+            "THB": 36.5,
+            "JPY": 150.75,
+            "GBP": 0.79,
+            "CAD": 1.35,
+            "AUD": 1.52,
+            "CHF": 0.88,
+            "CNY": 7.19,
+            "BRL": 4.97,
+            "INR": 82.95
+        };
+
+        const currencyNames = {
+            "USD": "United States Dollar",
+            "MXN": "Mexican Peso",
+            "EUR": "Euro",
+            "CRC": "Costa Rican Colón",
+            "THB": "Thai Baht",
+            "JPY": "Japanese Yen",
+            "GBP": "British Pound",
+            "CAD": "Canadian Dollar",
+            "AUD": "Australian Dollar",
+            "CHF": "Swiss Franc",
+            "CNY": "Chinese Yuan",
+            "BRL": "Brazilian Real",
+            "INR": "Indian Rupee"
+        };
+
+        let activeCurrencies = ["MXN", "USD", "CRC", "THB", "EUR"];
+        let baseCurrency = "USD";
+        let baseValue = 1.0;
+        let currentFocusId = null;
+        let expression = "";
+
+        // Elements
+        const currencyListContainer = document.getElementById('currency-list');
+        const keyboard = document.getElementById('smart-keyboard');
+        const expressionDisplay = document.getElementById('kb-expression');
+        const modal = document.getElementById('currency-modal');
+
+        // Initialize
+        function init() {
+            renderCurrencyRows();
+            populateModal();
+            // Check for saved theme
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        }
+
+        function renderCurrencyRows() {
+            currencyListContainer.innerHTML = '';
+            activeCurrencies.forEach(code => {
+                const value = convertValue(baseValue, baseCurrency, code);
+                const row = document.createElement('div');
+                row.className = 'bg-card-light dark:bg-card-dark rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-4 transition-all duration-300 hover:shadow-md active:scale-[0.98] group relative overflow-hidden';
+                row.id = `row-${code}`;
+                
+                // Flag placeholder (Simplified circle with letters for safety as per instructions to only use passed media)
+                const flagColor = stringToHslColor(code, 40, 60);
+                
+                row.innerHTML = `
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-inner" style="background-color: ${flagColor}">
+                        ${code.slice(0,2)}
+                    </div>
+                    <div class="flex-grow">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-sm font-bold tracking-wider">${code}</span>
+                            <span class="text-[10px] text-slate-400 font-medium uppercase truncate max-w-[100px]">${currencyNames[code]}</span>
+                        </div>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                readonly
+                                class="currency-input w-full bg-transparent text-2xl font-mono font-medium focus:text-blue-600 dark:focus:text-blue-400"
+                                value="${formatValue(value)}"
+                                onclick="handleInputFocus('${code}')"
+                                id="input-${code}"
+                            >
+                        </div>
+                    </div>
+                    <button onclick="removeCurrency('${code}')" class="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-rose-500 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    </button>
+                `;
+                currencyListContainer.appendChild(row);
+            });
+        }
+
+        function convertValue(amount, from, to) {
+            const amountInUsd = amount / mockRates[from];
+            return amountInUsd * mockRates[to];
+        }
+
+        function formatValue(val) {
+            if (val === 0) return "0";
+            return Number(val).toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 4,
+                useGrouping: false
+            });
+        }
+
+        function stringToHslColor(str, s, l) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            let h = hash % 360;
+            return `hsl(${h}, ${s}%, ${l}%)`;
+        }
+
+        // Interaction Handlers
+        function handleInputFocus(code) {
+            currentFocusId = code;
+            expression = document.getElementById(`input-${code}`).value;
+            updateExpressionDisplay();
+            
+            // Highlight focused row
+            document.querySelectorAll('[id^="row-"]').forEach(el => el.classList.remove('ring-2', 'ring-blue-500/50', 'bg-blue-50/10'));
+            document.getElementById(`row-${code}`).classList.add('ring-2', 'ring-blue-500/50', 'bg-blue-50/10');
+            
+            // Show keyboard
+            keyboard.classList.remove('translate-y-full');
+        }
+
+        function closeKeyboard() {
+            keyboard.classList.add('translate-y-full');
+            document.querySelectorAll('[id^="row-"]').forEach(el => el.classList.remove('ring-2', 'ring-blue-500/50', 'bg-blue-50/10'));
+        }
+
+        function kbPress(char) {
+            if (expression === "0") expression = "";
+            expression += char;
+            updateExpressionDisplay();
+            updateLive();
+        }
+
+        function kbClear() {
+            expression = "0";
+            updateExpressionDisplay();
+            updateLive();
+        }
+
+        function kbBackspace() {
+            expression = expression.slice(0, -1);
+            if (expression === "") expression = "0";
+            updateExpressionDisplay();
+            updateLive();
+        }
+
+        function updateExpressionDisplay() {
+            expressionDisplay.innerText = expression;
+            const activeInput = document.getElementById(`input-${currentFocusId}`);
+            if (activeInput) activeInput.value = expression;
+        }
+
+        function updateLive() {
+            try {
+                // Try evaluating for reactivity, but only if it's a valid number/simple expression
+                // We use a safe subset for live updates
+                const sanitized = expression.replace(/[^0-9.\+\-\*\/]/g, '');
+                if (!sanitized) return;
+                
+                // Only update others if last char isn't an operator
+                if (/[0-9]$/.test(sanitized)) {
+                    const result = eval(sanitized);
+                    baseValue = result;
+                    baseCurrency = currentFocusId;
+                    
+                    activeCurrencies.forEach(code => {
+                        if (code !== currentFocusId) {
+                            const val = convertValue(baseValue, baseCurrency, code);
+                            const input = document.getElementById(`input-${code}`);
+                            if (input) input.value = formatValue(val);
+                        }
+                    });
+                }
+            } catch (e) {
+                // Don't update others on invalid expression state
+            }
+        }
+
+        function kbEvaluate() {
+            try {
+                const result = eval(expression.replace(/[^0-9.\+\-\*\/]/g, ''));
+                expression = formatValue(result);
+                updateExpressionDisplay();
+                updateLive();
+            } catch (e) {
+                expression = "Error";
+                updateExpressionDisplay();
+            }
+        }
+
+        function handleReset() {
+            baseValue = 1;
+            baseCurrency = "USD";
+            expression = "1";
+            renderCurrencyRows();
+            if (currentFocusId) {
+                handleInputFocus(currentFocusId);
+            }
+        }
+
+        function removeCurrency(code) {
+            if (activeCurrencies.length <= 2) return;
+            activeCurrencies = activeCurrencies.filter(c => c !== code);
+            renderCurrencyRows();
+        }
+
+        function openCurrencyModal() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeCurrencyModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function populateModal() {
+            const modalList = document.getElementById('modal-currency-list');
+            modalList.innerHTML = '';
+            Object.keys(mockRates).forEach(code => {
+                if (!activeCurrencies.includes(code)) {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 text-left';
+                    btn.onclick = () => addCurrency(code);
+                    btn.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style="background-color: ${stringToHslColor(code, 40, 60)}">
+                                ${code.slice(0,2)}
+                            </div>
+                            <div>
+                                <div class="font-bold text-sm">${code}</div>
+                                <div class="text-[10px] text-slate-500">${currencyNames[code]}</div>
+                            </div>
+                        </div>
+                        <div class="text-blue-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                        </div>
+                    `;
+                    modalList.appendChild(btn);
+                }
+            });
+        }
+
+        function addCurrency(code) {
+            activeCurrencies.push(code);
+            renderCurrencyRows();
+            populateModal();
+            closeCurrencyModal();
+            // Scroll to bottom
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        // Global key listeners for physical keyboards
+        window.addEventListener('keydown', (e) => {
+            if (currentFocusId) {
+                if (/[0-9.\+\-\*\/]/.test(e.key)) {
+                    kbPress(e.key);
+                    e.preventDefault();
+                } else if (e.key === 'Backspace') {
+                    kbBackspace();
+                    e.preventDefault();
+                } else if (e.key === 'Enter') {
+                    kbEvaluate();
+                    e.preventDefault();
+                } else if (e.key === 'Escape') {
+                    closeKeyboard();
+                }
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>
