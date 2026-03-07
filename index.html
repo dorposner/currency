@@ -277,13 +277,25 @@
             activeCurrencies.forEach(code => {
                 const value = convertValue(baseValue, baseCurrency, code);
                 const row = document.createElement('div');
-                row.className = 'bg-card-light dark:bg-card-dark rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-4 transition-all duration-300 hover:shadow-md active:scale-[0.98] group relative overflow-hidden';
+                row.className = 'bg-card-light dark:bg-card-dark rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-4 transition-all duration-300 hover:shadow-md group relative overflow-hidden';
                 row.id = `row-${code}`;
                 
+                row.draggable = true;
+                row.dataset.code = code;
+                row.addEventListener('dragstart', handleDragStart);
+                row.addEventListener('dragover', handleDragOver);
+                row.addEventListener('drop', handleDrop);
+                row.addEventListener('dragenter', handleDragEnter);
+                row.addEventListener('dragleave', handleDragLeave);
+                row.addEventListener('dragend', handleDragEnd);
+
                 const flagColor = stringToHslColor(code, 40, 60);
                 const name = getCurrencyName(code);
                 
                 row.innerHTML = `
+                    <div class="cursor-grab text-slate-300 hover:text-slate-500 dark:hover:text-slate-400 active:cursor-grabbing">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+                    </div>
                     <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-inner" style="background-color: ${flagColor}">
                         ${code.slice(0,2)}
                     </div>
@@ -335,6 +347,52 @@
             return `hsl(${h}, ${s}%, ${l}%)`;
         }
 
+        // Drag and Drop State
+        let dragSrcEl = null;
+
+        function handleDragStart(e) {
+            this.style.opacity = '0.4';
+            dragSrcEl = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.code);
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) e.preventDefault(); 
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            this.classList.add('border-blue-500', 'border-dashed');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('border-blue-500', 'border-dashed');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) e.stopPropagation(); 
+            if (dragSrcEl !== this) {
+                const sourceCode = dragSrcEl.dataset.code;
+                const targetCode = this.dataset.code;
+                const sourceIndex = activeCurrencies.indexOf(sourceCode);
+                const targetIndex = activeCurrencies.indexOf(targetCode);
+                activeCurrencies.splice(sourceIndex, 1);
+                activeCurrencies.splice(targetIndex, 0, sourceCode);
+                saveCurrencies();
+                renderCurrencyRows();
+            }
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            this.style.opacity = '1';
+            document.querySelectorAll('[id^="row-"]').forEach(item => {
+                item.classList.remove('border-blue-500', 'border-dashed');
+            });
+        }
+
         // Interaction Handlers
         function handleInputFocus(code) {
             currentFocusId = code;
@@ -348,11 +406,29 @@
             
             // Show keyboard
             keyboard.classList.remove('translate-y-full');
+
+            // Handle padding and scroll
+            const mainContent = document.querySelector('main');
+            const kbHeight = keyboard.offsetHeight || 340;
+            if (mainContent) {
+                mainContent.style.paddingBottom = `${kbHeight + 20}px`;
+            }
+            
+            setTimeout(() => {
+                if (activeRow) {
+                    activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
         }
 
         function closeKeyboard() {
             keyboard.classList.add('translate-y-full');
             document.querySelectorAll('[id^="row-"]').forEach(el => el.classList.remove('ring-2', 'ring-blue-500/50', 'bg-blue-50/10'));
+            
+            const mainContent = document.querySelector('main');
+            if (mainContent) {
+                mainContent.style.paddingBottom = '';
+            }
         }
 
         function kbPress(char) {
