@@ -182,37 +182,8 @@
 
     <script>
         // Data & State
-        const mockRates = {
-            "USD": 1.0,
-            "MXN": 17.05,
-            "EUR": 0.925,
-            "CRC": 510.25,
-            "THB": 36.5,
-            "JPY": 150.75,
-            "GBP": 0.79,
-            "CAD": 1.35,
-            "AUD": 1.52,
-            "CHF": 0.88,
-            "CNY": 7.19,
-            "BRL": 4.97,
-            "INR": 82.95
-        };
-
-        const currencyNames = {
-            "USD": "United States Dollar",
-            "MXN": "Mexican Peso",
-            "EUR": "Euro",
-            "CRC": "Costa Rican Colón",
-            "THB": "Thai Baht",
-            "JPY": "Japanese Yen",
-            "GBP": "British Pound",
-            "CAD": "Canadian Dollar",
-            "AUD": "Australian Dollar",
-            "CHF": "Swiss Franc",
-            "CNY": "Chinese Yuan",
-            "BRL": "Brazilian Real",
-            "INR": "Indian Rupee"
-        };
+        let rates = {};
+        const currencyDisplayNames = new Intl.DisplayNames(['en'], { type: 'currency' });
 
         let activeCurrencies = ["MXN", "USD", "CRC", "THB", "EUR"];
         let baseCurrency = "USD";
@@ -225,17 +196,59 @@
         const keyboard = document.getElementById('smart-keyboard');
         const expressionDisplay = document.getElementById('kb-expression');
         const modal = document.getElementById('currency-modal');
+        const offlineStatus = document.getElementById('offline-status');
+
+        function getCurrencyName(code) {
+             try {
+                 return currencyDisplayNames.of(code) || code;
+             } catch (e) {
+                 return code;
+             }
+        }
 
         // Initialize
-        function init() {
-            renderCurrencyRows();
-            populateModal();
+        async function init() {
             // Check for saved theme
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
             } else {
                 document.documentElement.classList.remove('dark');
             }
+
+            // Initially set loading state
+            if (offlineStatus) {
+                offlineStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>Loading live rates...';
+            }
+            currencyListContainer.innerHTML = '<div class="text-center py-10 text-slate-500 animate-pulse">Fetching latest exchange rates...</div>';
+
+            try {
+                const response = await fetch('https://open.er-api.com/v6/latest/USD');
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                rates = data.rates;
+                
+                // Update status indicator
+                if (offlineStatus) {
+                    offlineStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Live Rates Active';
+                    offlineStatus.className = 'text-[10px] font-medium text-emerald-600 dark:text-emerald-400 mt-0.5 flex items-center gap-1';
+                }
+            } catch (error) {
+                console.error('Error fetching rates:', error);
+                
+                // Keep some fallback if fetch fails
+                rates = { "USD": 1.0, "EUR": 0.9, "GBP": 0.8 }; 
+                if (offlineStatus) {
+                    offlineStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Offline Mode (Failed)';
+                    offlineStatus.className = 'text-[10px] font-medium text-rose-600 dark:text-rose-400 mt-0.5 flex items-center gap-1';
+                }
+            }
+
+            // Filter active currencies to those present in rates, default to USD if empty
+            activeCurrencies = activeCurrencies.filter(c => rates[c]);
+            if (activeCurrencies.length === 0 && rates['USD']) activeCurrencies.push('USD');
+
+            renderCurrencyRows();
+            populateModal();
         }
 
         function toggleTheme() {
@@ -251,8 +264,8 @@
                 row.className = 'bg-card-light dark:bg-card-dark rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-4 transition-all duration-300 hover:shadow-md active:scale-[0.98] group relative overflow-hidden';
                 row.id = `row-${code}`;
                 
-                // Flag placeholder (Simplified circle with letters for safety as per instructions to only use passed media)
                 const flagColor = stringToHslColor(code, 40, 60);
+                const name = getCurrencyName(code);
                 
                 row.innerHTML = `
                     <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-inner" style="background-color: ${flagColor}">
@@ -261,7 +274,7 @@
                     <div class="flex-grow">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-sm font-bold tracking-wider">${code}</span>
-                            <span class="text-[10px] text-slate-400 font-medium uppercase truncate max-w-[100px]">${currencyNames[code]}</span>
+                            <span class="text-[10px] text-slate-400 font-medium uppercase truncate max-w-[100px]">${name}</span>
                         </div>
                         <div class="relative">
                             <input 
@@ -283,8 +296,9 @@
         }
 
         function convertValue(amount, from, to) {
-            const amountInUsd = amount / mockRates[from];
-            return amountInUsd * mockRates[to];
+            if (!rates[from] || !rates[to]) return 0;
+            const amountInUsd = amount / rates[from];
+            return amountInUsd * rates[to];
         }
 
         function formatValue(val) {
@@ -313,7 +327,8 @@
             
             // Highlight focused row
             document.querySelectorAll('[id^="row-"]').forEach(el => el.classList.remove('ring-2', 'ring-blue-500/50', 'bg-blue-50/10'));
-            document.getElementById(`row-${code}`).classList.add('ring-2', 'ring-blue-500/50', 'bg-blue-50/10');
+            const activeRow = document.getElementById(`row-${code}`);
+            if (activeRow) activeRow.classList.add('ring-2', 'ring-blue-500/50', 'bg-blue-50/10');
             
             // Show keyboard
             keyboard.classList.remove('translate-y-full');
@@ -390,7 +405,7 @@
 
         function handleReset() {
             baseValue = 1;
-            baseCurrency = "USD";
+            baseCurrency = activeCurrencies.length > 0 ? activeCurrencies[0] : "USD";
             expression = "1";
             renderCurrencyRows();
             if (currentFocusId) {
@@ -402,6 +417,7 @@
             if (activeCurrencies.length <= 2) return;
             activeCurrencies = activeCurrencies.filter(c => c !== code);
             renderCurrencyRows();
+            if (currentFocusId === code) closeKeyboard();
         }
 
         function openCurrencyModal() {
@@ -417,9 +433,10 @@
         function populateModal() {
             const modalList = document.getElementById('modal-currency-list');
             modalList.innerHTML = '';
-            Object.keys(mockRates).forEach(code => {
+            Object.keys(rates).sort().forEach(code => {
                 if (!activeCurrencies.includes(code)) {
                     const btn = document.createElement('button');
+                    const name = getCurrencyName(code);
                     btn.className = 'w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 text-left';
                     btn.onclick = () => addCurrency(code);
                     btn.innerHTML = `
@@ -429,7 +446,7 @@
                             </div>
                             <div>
                                 <div class="font-bold text-sm">${code}</div>
-                                <div class="text-[10px] text-slate-500">${currencyNames[code]}</div>
+                                <div class="text-[10px] text-slate-500">${name}</div>
                             </div>
                         </div>
                         <div class="text-blue-500">
