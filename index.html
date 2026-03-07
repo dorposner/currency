@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="manifest" href="manifest.json">
     <title>Multi-Way Currency Converter</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -186,6 +188,19 @@
         const currencyDisplayNames = new Intl.DisplayNames(['en'], { type: 'currency' });
 
         let activeCurrencies = ["MXN", "USD", "CRC", "THB", "EUR"];
+        try {
+            const saved = localStorage.getItem('activeCurrencies');
+            if (saved) {
+                activeCurrencies = JSON.parse(saved);
+            }
+        } catch (e) {
+            console.error("Failed to parse saved currencies", e);
+        }
+
+        function saveCurrencies() {
+            localStorage.setItem('activeCurrencies', JSON.stringify(activeCurrencies));
+        }
+
         let baseCurrency = "USD";
         let baseValue = 1.0;
         let currentFocusId = null;
@@ -246,6 +261,7 @@
             // Filter active currencies to those present in rates, default to USD if empty
             activeCurrencies = activeCurrencies.filter(c => rates[c]);
             if (activeCurrencies.length === 0 && rates['USD']) activeCurrencies.push('USD');
+            saveCurrencies();
 
             renderCurrencyRows();
             populateModal();
@@ -416,6 +432,7 @@
         function removeCurrency(code) {
             if (activeCurrencies.length <= 2) return;
             activeCurrencies = activeCurrencies.filter(c => c !== code);
+            saveCurrencies();
             renderCurrencyRows();
             if (currentFocusId === code) closeKeyboard();
         }
@@ -460,6 +477,7 @@
 
         function addCurrency(code) {
             activeCurrencies.push(code);
+            saveCurrencies();
             renderCurrencyRows();
             populateModal();
             closeCurrencyModal();
@@ -486,6 +504,15 @@
         });
 
         init();
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
     </script>
 </body>
 </html>
