@@ -7,6 +7,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Multi-Way Currency Converter</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
@@ -182,6 +183,30 @@
         </div>
     </div>
 
+    <!-- Chart Modal -->
+    <div id="chart-modal" class="fixed inset-0 z-[80] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeChartModal()"></div>
+        <div class="relative w-full max-w-lg bg-card-light dark:bg-card-dark rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col h-[60vh] md:h-auto md:max-h-[80vh]">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-bold" id="chart-modal-title">Trend</h3>
+                    <div class="text-xs text-slate-500 font-medium" id="chart-modal-subtitle"></div>
+                </div>
+                <button onclick="closeChartModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-4 flex gap-2 justify-center border-b border-slate-100 dark:border-slate-800/50">
+                <button onclick="updateChartTimeframe('1W')" id="btn-1W" class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">1W</button>
+                <button onclick="updateChartTimeframe('1M')" id="btn-1M" class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">1M</button>
+                <button onclick="updateChartTimeframe('1Y')" id="btn-1Y" class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">1Y</button>
+            </div>
+            <div class="p-4 flex-grow relative min-h-[250px] w-full">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Data & State
         let rates = {};
@@ -270,6 +295,9 @@
         function toggleTheme() {
             document.documentElement.classList.toggle('dark');
             localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+            if (document.getElementById('chart-modal') && !document.getElementById('chart-modal').classList.contains('hidden') && typeof renderChart === 'function') {
+                renderChart();
+            }
         }
 
         function renderCurrencyRows() {
@@ -315,9 +343,14 @@
                             >
                         </div>
                     </div>
-                    <button onclick="removeCurrency('${code}')" class="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-rose-500 transition-all">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                    </button>
+                    <div class="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                        <button onclick="openChartModal('${code}')" class="p-1.5 text-slate-300 hover:text-blue-500 transition-colors bg-slate-50 dark:bg-slate-800/50 rounded-lg" title="View Trend">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                        </button>
+                        <button onclick="removeCurrency('${code}')" class="p-1.5 text-slate-300 hover:text-rose-500 transition-colors bg-slate-50 dark:bg-slate-800/50 rounded-lg" title="Remove">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                        </button>
+                    </div>
                 `;
                 currencyListContainer.appendChild(row);
             });
@@ -559,6 +592,150 @@
             closeCurrencyModal();
             // Scroll to bottom
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        // Chart Logic
+        const chartModal = document.getElementById('chart-modal');
+        let currentChart = null;
+        let chartCurrency = null;
+        let chartTimeframe = '1W';
+
+        function generateMockData(baseRate, timeframe, points) {
+            const data = [];
+            const labels = [];
+            let current = baseRate;
+            const now = new Date();
+            
+            let volatility = 0.005;
+            if (timeframe === '1M') volatility = 0.01;
+            if (timeframe === '1Y') volatility = 0.02;
+
+            for (let i = points; i >= 0; i--) {
+                const date = new Date(now);
+                if (timeframe === '1W' || timeframe === '1M') {
+                    date.setDate(date.getDate() - i);
+                    labels.push(date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                } else if (timeframe === '1Y') {
+                    date.setMonth(date.getMonth() - i);
+                    labels.push(date.toLocaleDateString(undefined, { month: 'short', year: '2-digit' }));
+                }
+                
+                const change = 1 + (Math.random() * volatility * 2 - volatility);
+                current = current * change;
+                data.push(current);
+            }
+            
+            const adjustmentFactor = baseRate / data[data.length - 1];
+            return {
+                labels,
+                data: data.map(v => v * adjustmentFactor)
+            };
+        }
+
+        function openChartModal(code) {
+            chartCurrency = code;
+            chartTimeframe = '1W';
+            
+            document.getElementById('chart-modal-title').innerText = \`\${code} vs \${baseCurrency}\`;
+            document.getElementById('chart-modal-subtitle').innerText = getCurrencyName(code);
+            
+            chartModal.classList.remove('hidden');
+            chartModal.classList.add('flex');
+            
+            updateChartTimeframe('1W');
+        }
+
+        function closeChartModal() {
+            chartModal.classList.add('hidden');
+            chartModal.classList.remove('flex');
+        }
+
+        function updateChartTimeframe(tf) {
+            chartTimeframe = tf;
+            
+            ['1W', '1M', '1Y'].forEach(t => {
+                const btn = document.getElementById(\`btn-\${t}\`);
+                if (t === tf) {
+                    btn.className = "px-4 py-1.5 rounded-full text-sm font-medium transition-colors bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400";
+                } else {
+                    btn.className = "px-4 py-1.5 rounded-full text-sm font-medium transition-colors text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800";
+                }
+            });
+
+            renderChart();
+        }
+
+        function renderChart() {
+            if (!rates[chartCurrency] || !rates[baseCurrency] || !window.Chart) return;
+            
+            const rate = rates[baseCurrency] / rates[chartCurrency]; 
+            let points = 7;
+            if (chartTimeframe === '1W') points = 7;
+            if (chartTimeframe === '1M') points = 30;
+            if (chartTimeframe === '1Y') points = 12;
+
+            const { labels, data } = generateMockData(rate, chartTimeframe, points);
+            
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: \`1 \${chartCurrency} = ? \${baseCurrency}\`,
+                        data: data,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) + ' ' + baseCurrency;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: textColor, maxTicksLimit: 6 }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { color: textColor },
+                            suggestedMin: Math.min(...data) * 0.995,
+                            suggestedMax: Math.max(...data) * 1.005
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
         }
 
         // Global key listeners for physical keyboards
