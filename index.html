@@ -201,7 +201,10 @@
                 <button onclick="updateChartTimeframe('1M')" id="btn-1M" class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">1M</button>
                 <button onclick="updateChartTimeframe('1Y')" id="btn-1Y" class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">1Y</button>
             </div>
-            <div class="p-4 flex-grow relative min-h-[250px] w-full">
+            <div class="p-4 flex-grow relative min-h-[250px] w-full flex flex-col">
+                <div id="chart-loading" class="absolute inset-0 flex items-center justify-center bg-card-light/80 dark:bg-card-dark/80 backdrop-blur-sm z-10 hidden rounded-b-3xl transition-opacity">
+                    <div class="w-8 h-8 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-blue-500 dark:border-t-blue-400 animate-spin"></div>
+                </div>
                 <canvas id="trendChart"></canvas>
             </div>
         </div>
@@ -600,35 +603,63 @@
         let chartCurrency = null;
         let chartTimeframe = '1W';
 
-        function generateMockData(baseRate, timeframe, points) {
-            const data = [];
-            const labels = [];
-            let current = baseRate;
+        async function fetchHistoricalData(base, target, timeframe) {
+            const dates = [];
             const now = new Date();
-            
-            let volatility = 0.005;
-            if (timeframe === '1M') volatility = 0.01;
-            if (timeframe === '1Y') volatility = 0.02;
+            let points = 7;
+            let stepDays = 1;
 
-            for (let i = points; i >= 0; i--) {
-                const date = new Date(now);
-                if (timeframe === '1W' || timeframe === '1M') {
-                    date.setDate(date.getDate() - i);
-                    labels.push(date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
-                } else if (timeframe === '1Y') {
-                    date.setMonth(date.getMonth() - i);
-                    labels.push(date.toLocaleDateString(undefined, { month: 'short', year: '2-digit' }));
-                }
-                
-                const change = 1 + (Math.random() * volatility * 2 - volatility);
-                current = current * change;
-                data.push(current);
+            if (timeframe === '1W') {
+                points = 7;
+                stepDays = 1;
+            } else if (timeframe === '1M') {
+                points = 30;
+                stepDays = 1;
+            } else if (timeframe === '1Y') {
+                points = 12;
+                stepDays = 30;
             }
-            
-            const adjustmentFactor = baseRate / data[data.length - 1];
+
+            for (let i = points - 1; i >= 0; i--) {
+                const d = new Date(now);
+                d.setDate(d.getDate() - (i * stepDays));
+                dates.push(d);
+            }
+
+            const baseLower = base.toLowerCase();
+            const targetLower = target.toLowerCase();
+
+            const promises = dates.map(async (dateObj) => {
+                const dateStr = dateObj.toISOString().split('T')[0];
+                try {
+                    const res = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${dateStr}/v1/currencies/${baseLower}.json`);
+                    if (!res.ok) throw new Error('API Error');
+                    const data = await res.json();
+                    
+                    let label = '';
+                    if (timeframe === '1Y') {
+                         label = dateObj.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+                    } else {
+                         label = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    }
+
+                    return {
+                        dateObj,
+                        label,
+                        rate: data[baseLower][targetLower]
+                    };
+                } catch (e) {
+                    return null;
+                }
+            });
+
+            let results = await Promise.all(promises);
+            results = results.filter(r => r !== null && r.rate !== undefined);
+            results.sort((a, b) => a.dateObj - b.dateObj);
+
             return {
-                labels,
-                data: data.map(v => v * adjustmentFactor)
+                labels: results.map(r => r.label),
+                data: results.map(r => r.rate)
             };
         }
 
@@ -665,17 +696,16 @@
             renderChart();
         }
 
-        function renderChart() {
+        async function renderChart() {
             if (!rates[chartCurrency] || !rates[baseCurrency] || !window.Chart) return;
             
-            const rate = rates[baseCurrency] / rates[chartCurrency]; 
-            let points = 7;
-            if (chartTimeframe === '1W') points = 7;
-            if (chartTimeframe === '1M') points = 30;
-            if (chartTimeframe === '1Y') points = 12;
+            const loading = document.getElementById('chart-loading');
+            if (loading) loading.classList.remove('hidden');
 
-            const { labels, data } = generateMockData(rate, chartTimeframe, points);
+            const { labels, data } = await fetchHistoricalData(chartCurrency, baseCurrency, chartTimeframe);
             
+            if (loading) loading.classList.add('hidden');
+
             const ctx = document.getElementById('trendChart').getContext('2d');
             
             if (currentChart) {
