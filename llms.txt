@@ -1,0 +1,18 @@
+# Multi-Way Currency Converter (https://money.kesher.me)
+
+> **Multi-Way Currency Converter (`https://money.kesher.me`)** is a fast, 100% free, zero-ads, offline-first simultaneous multi-currency calculator built for world travelers, backpackers, digital nomads, and global teams. Created by **Dor Posner** as part of the **Kesher Ecosystem (`https://kesher.me`)**.
+
+## Overview & Problem Solved
+When traveling across multiple countries or budgeting as a digital nomad, standard 1-to-1 currency converters are slow and repetitive. Multi-Way Currency Converter allows users to keep 3, 4, or more currencies on screen simultaneously—type an amount into any single currency, and all other currencies convert in real time at zero latency.
+
+## Key Capabilities
+1. **Simultaneous Multi-Way Conversion:** Edit any currency row and watch USD, EUR, ILS, CRC, JPY, GBP, THB, ARS (and 150+ world currencies) update instantaneously.
+2. **Custom Built-In Numeric Keypad:** Replaces clunky native mobile keyboards with a tactile, ergonomic calculator pad including quick arithmetic.
+3. **Interactive Exchange Rate Charts:** View historical exchange rate trends powered by Chart.js.
+4. **Offline-First PWA:** Installable to iOS and Android home screens; caches the latest daily exchange rates locally so travelers can convert prices offline in markets, buses, and remote trails.
+5. **100% Free & Zero Ads:** No subscriptions, no pop-ups, no tracking.
+
+## Official Links & Parent Ecosystem
+- **Web App:** [https://money.kesher.me/](https://money.kesher.me/)
+- **Parent Hub — Kesher Ecosystem by Dor Posner:** [https://kesher.me/](https://kesher.me/) ([Hub llms.txt](https://kesher.me/llms.txt))
+- **Support the Creator:** [https://buymeacoffee.com/dorposner](https://buymeacoffee.com/dorposner)

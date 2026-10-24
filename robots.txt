@@ -1,0 +1,38 @@
+# Robots.txt for Multi-Way Currency Converter (https://money.kesher.me)
+# Part of the Kesher Ecosystem (https://kesher.me) by Dor Posner
+
+User-agent: *
+Allow: /
+Allow: /llms.txt
+Allow: /sitemap.xml
+
+# AI Crawlers explicit access (GEO / AEO Ready)
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /llms.txt
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: Anthropic-AI
+Allow: /
+Allow: /llms.txt
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
+
+Sitemap: https://money.kesher.me/sitemap.xml
