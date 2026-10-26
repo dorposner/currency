@@ -204,12 +204,23 @@
             <!-- Rows injected by JS -->
         </div>
 
-        <!-- Add Currency Trigger -->
-        <div class="mt-8 flex justify-center">
-            <button onclick="openCurrencyModal()" class="flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition-all border border-slate-200 dark:border-slate-700 text-sm font-medium">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                Add More Currencies
+        <!-- Add Currency & Traveler Tools Bar -->
+        <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-2.5">
+            <button onclick="openCurrencyModal()" class="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-card-light dark:bg-card-dark hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all border border-slate-200 dark:border-slate-800 text-xs font-bold shadow-sm active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                Add Currencies
             </button>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button onclick="openTravelToolsModal('tip')" class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-2xl transition-all border border-blue-200 dark:border-blue-800 text-xs font-bold shadow-sm active:scale-95">
+                    🍽️ Tip & Tax
+                </button>
+                <button onclick="openTravelToolsModal('split')" class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-2xl transition-all border border-emerald-200 dark:border-emerald-800 text-xs font-bold shadow-sm active:scale-95">
+                    👥 Split Bill
+                </button>
+                <button onclick="openTravelToolsModal('atm')" class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-3 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-2xl transition-all border border-amber-200 dark:border-amber-800 text-xs font-bold shadow-sm active:scale-95">
+                    🏧 ATM Fees
+                </button>
+            </div>
         </div>
     </main>
 
@@ -383,6 +394,201 @@
                     <div class="w-8 h-8 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-blue-500 dark:border-t-blue-400 animate-spin"></div>
                 </div>
                 <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Smart Traveler Tools Modal (Tip & Tax, Bill Splitter, ATM Fees) -->
+    <div id="travel-tools-modal" class="fixed inset-0 z-[85] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeTravelToolsModal()"></div>
+        <div class="relative w-full max-w-lg bg-card-light dark:bg-card-dark rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[85vh]">
+            <!-- Modal Header with Tool Switcher Tabs -->
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                    <button onclick="switchToolTab('tip')" id="tt-tab-tip" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-blue-600 text-white shadow-sm">
+                        🍽️ Tip & Tax
+                    </button>
+                    <button onclick="switchToolTab('split')" id="tt-tab-split" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+                        👥 Split Bill
+                    </button>
+                    <button onclick="switchToolTab('atm')" id="tt-tab-atm" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+                        🏧 ATM Fees
+                    </button>
+                </div>
+                <button onclick="closeTravelToolsModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-5 overflow-y-auto no-scrollbar space-y-4">
+                <!-- TAB 1: TIP & TAX ASSISTANT -->
+                <div id="tt-content-tip" class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Bill Amount</label>
+                            <span class="text-xs font-mono font-bold text-blue-600 dark:text-blue-400" id="tt-tip-currency-badge">USD</span>
+                        </div>
+                        <input 
+                            type="number" 
+                            step="any" 
+                            id="tt-tip-bill-input" 
+                            class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 font-mono text-2xl font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            oninput="calculateTipAndTax()"
+                        >
+                    </div>
+
+                    <div>
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">Tip Percentage</span>
+                        <div class="grid grid-cols-5 gap-1.5">
+                            <button onclick="setTipPercent(0)" class="tt-tip-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-blue-500 hover:text-white transition-colors" data-pct="0">0%</button>
+                            <button onclick="setTipPercent(10)" class="tt-tip-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-blue-500 hover:text-white transition-colors" data-pct="10">10%</button>
+                            <button onclick="setTipPercent(15)" class="tt-tip-btn py-2 rounded-xl bg-blue-600 text-white text-xs font-bold transition-colors" data-pct="15">15%</button>
+                            <button onclick="setTipPercent(18)" class="tt-tip-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-blue-500 hover:text-white transition-colors" data-pct="18">18%</button>
+                            <button onclick="setTipPercent(20)" class="tt-tip-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-blue-500 hover:text-white transition-colors" data-pct="20">20%</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">Regional Tax / Service</span>
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="setTaxPercent(0)" class="tt-tax-btn py-2 rounded-xl bg-blue-600 text-white text-xs font-bold transition-colors" data-tax="0">None</button>
+                            <button onclick="setTaxPercent(10)" class="tt-tax-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-blue-500 hover:text-white transition-colors" data-tax="10">+10% Svc</button>
+                            <button onclick="setTaxPercent(13)" class="tt-tax-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-blue-500 hover:text-white transition-colors" data-tax="13">+13% IVA</button>
+                            <button onclick="setTaxPercent(18)" class="tt-tax-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-blue-500 hover:text-white transition-colors" data-tax="18">+18% VAT</button>
+                        </div>
+                    </div>
+
+                    <!-- Summary Card -->
+                    <div class="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 space-y-2">
+                        <div class="flex justify-between items-center text-xs text-slate-500">
+                            <span>Tip Amount:</span>
+                            <span id="tt-tip-amount-out" class="font-mono font-bold text-slate-700 dark:text-slate-300">$0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-slate-500">
+                            <span>Tax / Service:</span>
+                            <span id="tt-tax-amount-out" class="font-mono font-bold text-slate-700 dark:text-slate-300">$0.00</span>
+                        </div>
+                        <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-baseline">
+                            <span class="text-sm font-bold">Total with Tip & Tax:</span>
+                            <span id="tt-tip-grand-total-out" class="font-mono text-2xl font-bold text-blue-600 dark:text-blue-400">$0.00</span>
+                        </div>
+                        <div id="tt-tip-conversions" class="pt-2 text-xs text-slate-400 space-y-0.5">
+                            <!-- Converted amounts injected by JS -->
+                        </div>
+                    </div>
+
+                    <button onclick="applyTipTotalToMatrix()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95">
+                        Apply Total to Live Matrix
+                    </button>
+                </div>
+
+                <!-- TAB 2: BILL SPLITTER -->
+                <div id="tt-content-split" class="space-y-4 hidden">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Total Bill to Split</label>
+                        <input 
+                            type="number" 
+                            step="any" 
+                            id="tt-split-bill-input" 
+                            class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 font-mono text-2xl font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            oninput="calculateBillSplit()"
+                        >
+                    </div>
+
+                    <div>
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">Number of People</span>
+                        <div class="flex items-center gap-3">
+                            <button onclick="adjustSplitPeople(-1)" class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-2xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-90 flex items-center justify-center">−</button>
+                            <div class="flex-1 py-2 text-center bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800">
+                                <span id="tt-split-count" class="text-2xl font-mono font-bold text-emerald-600 dark:text-emerald-400">2</span>
+                                <span class="text-xs text-slate-400 block font-medium">people</span>
+                            </div>
+                            <button onclick="adjustSplitPeople(1)" class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-2xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-90 flex items-center justify-center">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Split Breakdown Result -->
+                    <div class="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 space-y-2">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-sm font-bold">Each Person Pays:</span>
+                            <span id="tt-split-per-person-out" class="font-mono text-2xl font-bold text-emerald-600 dark:text-emerald-400">$0.00</span>
+                        </div>
+                        <div id="tt-split-conversions" class="pt-2 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-400 space-y-1">
+                            <!-- Multi-currency share breakdown -->
+                        </div>
+                    </div>
+
+                    <button onclick="copySplitSummary()" id="tt-btn-copy-split" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                        Copy WhatsApp Split Summary
+                    </button>
+                </div>
+
+                <!-- TAB 3: ATM & FX FEE SIMULATOR -->
+                <div id="tt-content-atm" class="space-y-4 hidden">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Withdrawal Amount</label>
+                            <input 
+                                type="number" 
+                                step="any" 
+                                id="tt-atm-withdraw-input" 
+                                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 font-mono text-lg font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                                oninput="calculateAtmFees()"
+                            >
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">ATM Operator Fee</label>
+                            <input 
+                                type="number" 
+                                step="any" 
+                                id="tt-atm-fee-input" 
+                                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 font-mono text-lg font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                                placeholder="e.g. 220"
+                                oninput="calculateAtmFees()"
+                            >
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">Bank Foreign Transaction Fee (FX)</span>
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="setAtmFxMarkup(0)" class="tt-fx-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-amber-500 hover:text-white transition-colors" data-fx="0">0%</button>
+                            <button onclick="setAtmFxMarkup(1.5)" class="tt-fx-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-amber-500 hover:text-white transition-colors" data-fx="1.5">1.5%</button>
+                            <button onclick="setAtmFxMarkup(2.5)" class="tt-fx-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-amber-500 hover:text-white transition-colors" data-fx="2.5">2.5%</button>
+                            <button onclick="setAtmFxMarkup(3.0)" class="tt-fx-btn py-2 rounded-xl bg-amber-600 text-white text-xs font-bold transition-colors" data-fx="3.0">3.0%</button>
+                        </div>
+                    </div>
+
+                    <!-- Fee Summary Result -->
+                    <div class="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 space-y-2">
+                        <div class="flex justify-between items-center text-xs text-slate-500">
+                            <span>Total Dispensed + ATM Surcharge:</span>
+                            <span id="tt-atm-dispensed-out" class="font-mono font-bold text-slate-700 dark:text-slate-300">--</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-slate-500">
+                            <span>Official Net Cost (0% fee):</span>
+                            <span id="tt-atm-official-usd-out" class="font-mono text-slate-500">--</span>
+                        </div>
+                        <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-baseline">
+                            <span class="text-sm font-bold">Real Home Bank Deduction:</span>
+                            <span id="tt-atm-real-deduction-out" class="font-mono text-2xl font-bold text-amber-600 dark:text-amber-400">--</span>
+                        </div>
+                        <div class="text-xs text-amber-600 dark:text-amber-400 font-semibold flex justify-between items-center" id="tt-atm-total-surcharge-out">
+                            <!-- Total fee percentage -->
+                        </div>
+                    </div>
+
+                    <!-- DCC Warning Notice -->
+                    <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                        <div class="font-bold flex items-center gap-1.5 mb-0.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            Always Charge in Local Currency (Reject DCC)!
+                        </div>
+                        When an overseas ATM or card terminal asks if you want to be billed in USD/ILS or the local currency, <strong>always pick the local currency</strong>. Terminal conversion (DCC) charges a hidden 6%–12% predatory markup.
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1132,6 +1338,224 @@
             closeCurrencyModal();
             // Scroll to bottom
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        // Traveler Utility Suite State & Logic
+        let selectedTipPct = 15;
+        let selectedTaxPct = 0;
+        let splitPeopleCount = 2;
+        let selectedAtmFxMarkup = 3.0;
+        let lastComputedTipTotal = 0;
+
+        function openTravelToolsModal(tab = 'tip') {
+            triggerHaptic(10);
+            const modal = document.getElementById('travel-tools-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            const tipBillInput = document.getElementById('tt-tip-bill-input');
+            const splitBillInput = document.getElementById('tt-split-bill-input');
+            const atmWithdrawInput = document.getElementById('tt-atm-withdraw-input');
+            const currencyBadge = document.getElementById('tt-tip-currency-badge');
+
+            if (tipBillInput) tipBillInput.value = baseValue;
+            if (splitBillInput) splitBillInput.value = baseValue;
+            if (atmWithdrawInput) atmWithdrawInput.value = baseValue;
+            if (currencyBadge) currencyBadge.textContent = baseCurrency;
+
+            switchToolTab(tab);
+            calculateTipAndTax();
+            calculateBillSplit();
+            calculateAtmFees();
+        }
+
+        function closeTravelToolsModal() {
+            const modal = document.getElementById('travel-tools-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function switchToolTab(tab) {
+            triggerHaptic(8);
+            ['tip', 'split', 'atm'].forEach(t => {
+                const btn = document.getElementById(`tt-tab-${t}`);
+                const content = document.getElementById(`tt-content-${t}`);
+                if (t === tab) {
+                    btn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-blue-600 text-white shadow-sm';
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800';
+                    content.classList.add('hidden');
+                }
+            });
+        }
+
+        // --- Tip & Tax Assistant ---
+        function setTipPercent(pct) {
+            triggerHaptic(8);
+            selectedTipPct = pct;
+            document.querySelectorAll('.tt-tip-btn').forEach(btn => {
+                if (Number(btn.dataset.pct) === pct) {
+                    btn.className = 'tt-tip-btn py-2 rounded-xl bg-blue-600 text-white text-xs font-bold transition-colors';
+                } else {
+                    btn.className = 'tt-tip-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-blue-500 hover:text-white transition-colors';
+                }
+            });
+            calculateTipAndTax();
+        }
+
+        function setTaxPercent(tax) {
+            triggerHaptic(8);
+            selectedTaxPct = tax;
+            document.querySelectorAll('.tt-tax-btn').forEach(btn => {
+                if (Number(btn.dataset.tax) === tax) {
+                    btn.className = 'tt-tax-btn py-2 rounded-xl bg-blue-600 text-white text-xs font-bold transition-colors';
+                } else {
+                    btn.className = 'tt-tax-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-blue-500 hover:text-white transition-colors';
+                }
+            });
+            calculateTipAndTax();
+        }
+
+        function calculateTipAndTax() {
+            const bill = parseFloat(document.getElementById('tt-tip-bill-input').value) || 0;
+            const tipAmount = bill * (selectedTipPct / 100);
+            const taxAmount = bill * (selectedTaxPct / 100);
+            const grandTotal = bill + tipAmount + taxAmount;
+            lastComputedTipTotal = grandTotal;
+
+            const tipOut = document.getElementById('tt-tip-amount-out');
+            const taxOut = document.getElementById('tt-tax-amount-out');
+            const totalOut = document.getElementById('tt-tip-grand-total-out');
+            const conversionsOut = document.getElementById('tt-tip-conversions');
+
+            if (tipOut) tipOut.textContent = `${formatValue(tipAmount)} ${baseCurrency}`;
+            if (taxOut) taxOut.textContent = `${formatValue(taxAmount)} ${baseCurrency}`;
+            if (totalOut) totalOut.textContent = `${formatValue(grandTotal)} ${baseCurrency}`;
+
+            const splitInput = document.getElementById('tt-split-bill-input');
+            if (splitInput) splitInput.value = grandTotal.toFixed(2);
+
+            if (conversionsOut) {
+                conversionsOut.innerHTML = '';
+                activeCurrencies.filter(c => c !== baseCurrency).slice(0, 3).forEach(c => {
+                    const convVal = convertValue(grandTotal, baseCurrency, c);
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center';
+                    div.innerHTML = `<span>≈ ${getCurrencyName(c)}:</span><span class="font-mono font-semibold text-slate-700 dark:text-slate-300">${formatValue(convVal)} ${c}</span>`;
+                    conversionsOut.appendChild(div);
+                });
+            }
+        }
+
+        function applyTipTotalToMatrix() {
+            if (lastComputedTipTotal <= 0) return;
+            triggerHaptic(15);
+            baseValue = lastComputedTipTotal;
+            expression = formatValue(baseValue);
+            updateExpressionDisplay();
+            updateAllInputValues();
+            closeTravelToolsModal();
+        }
+
+        // --- Bill Splitter ---
+        function adjustSplitPeople(delta) {
+            triggerHaptic(8);
+            splitPeopleCount = Math.max(1, Math.min(20, splitPeopleCount + delta));
+            const countEl = document.getElementById('tt-split-count');
+            if (countEl) countEl.textContent = splitPeopleCount;
+            calculateBillSplit();
+        }
+
+        function calculateBillSplit() {
+            const bill = parseFloat(document.getElementById('tt-split-bill-input').value) || 0;
+            const count = splitPeopleCount || 1;
+            const perPerson = bill / count;
+
+            const perPersonOut = document.getElementById('tt-split-per-person-out');
+            const conversionsOut = document.getElementById('tt-split-conversions');
+
+            if (perPersonOut) perPersonOut.textContent = `${formatValue(perPerson)} ${baseCurrency}`;
+
+            if (conversionsOut) {
+                conversionsOut.innerHTML = '';
+                activeCurrencies.filter(c => c !== baseCurrency).slice(0, 3).forEach(c => {
+                    const convVal = convertValue(perPerson, baseCurrency, c);
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center';
+                    div.innerHTML = `<span>Each in ${c}:</span><span class="font-mono font-semibold text-emerald-600 dark:text-emerald-400">${formatValue(convVal)} ${c}</span>`;
+                    conversionsOut.appendChild(div);
+                });
+            }
+        }
+
+        function copySplitSummary() {
+            triggerHaptic(20);
+            const bill = parseFloat(document.getElementById('tt-split-bill-input').value) || 0;
+            const count = splitPeopleCount || 1;
+            const perPerson = bill / count;
+
+            let msg = `💰 Bill Split (${count} people):\n`;
+            msg += `Total: ${formatValue(bill)} ${baseCurrency}\n`;
+            msg += `Each: ${formatValue(perPerson)} ${baseCurrency}\n`;
+
+            activeCurrencies.filter(c => c !== baseCurrency).slice(0, 2).forEach(c => {
+                const convVal = convertValue(perPerson, baseCurrency, c);
+                msg += `(≈ ${formatValue(convVal)} ${c} each)\n`;
+            });
+            msg += `via Kesher Money (money.kesher.me)`;
+
+            navigator.clipboard.writeText(msg).then(() => {
+                const copyBtn = document.getElementById('tt-btn-copy-split');
+                if (copyBtn) {
+                    const original = copyBtn.innerHTML;
+                    copyBtn.innerHTML = `✓ Copied to Clipboard!`;
+                    copyBtn.classList.replace('bg-emerald-600', 'bg-blue-600');
+                    setTimeout(() => {
+                        copyBtn.innerHTML = original;
+                        copyBtn.classList.replace('bg-blue-600', 'bg-emerald-600');
+                    }, 2000);
+                }
+            });
+        }
+
+        // --- ATM & FX Fee Simulator ---
+        function setAtmFxMarkup(markup) {
+            triggerHaptic(8);
+            selectedAtmFxMarkup = markup;
+            document.querySelectorAll('.tt-fx-btn').forEach(btn => {
+                if (parseFloat(btn.dataset.fx) === markup) {
+                    btn.className = 'tt-fx-btn py-2 rounded-xl bg-amber-600 text-white text-xs font-bold transition-colors';
+                } else {
+                    btn.className = 'tt-fx-btn py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-amber-500 hover:text-white transition-colors';
+                }
+            });
+            calculateAtmFees();
+        }
+
+        function calculateAtmFees() {
+            const withdraw = parseFloat(document.getElementById('tt-atm-withdraw-input').value) || 0;
+            const operatorFee = parseFloat(document.getElementById('tt-atm-fee-input').value) || 0;
+            const fxPct = selectedAtmFxMarkup / 100;
+
+            const totalLocalDispensed = withdraw + operatorFee;
+            const officialUsd = convertValue(withdraw, baseCurrency, 'USD');
+            const totalWithOperatorInUsd = convertValue(totalLocalDispensed, baseCurrency, 'USD');
+            const realBankDeductionUsd = totalWithOperatorInUsd * (1 + fxPct);
+            const totalFeeUsd = realBankDeductionUsd - officialUsd;
+            const totalFeePct = officialUsd > 0 ? (totalFeeUsd / officialUsd) * 100 : 0;
+
+            const dispensedOut = document.getElementById('tt-atm-dispensed-out');
+            const officialUsdOut = document.getElementById('tt-atm-official-usd-out');
+            const realDeductionOut = document.getElementById('tt-atm-real-deduction-out');
+            const surchargeOut = document.getElementById('tt-atm-total-surcharge-out');
+
+            if (dispensedOut) dispensedOut.textContent = `${formatValue(totalLocalDispensed)} ${baseCurrency}`;
+            if (officialUsdOut) officialUsdOut.textContent = `$${formatValue(officialUsd)} USD`;
+            if (realDeductionOut) realDeductionOut.textContent = `$${formatValue(realBankDeductionUsd)} USD`;
+            if (surchargeOut) {
+                surchargeOut.innerHTML = `<span>Total Fee Overhead:</span><span>+$${formatValue(totalFeeUsd)} USD (${totalFeePct.toFixed(1)}%)</span>`;
+            }
         }
 
         // Chart Logic
