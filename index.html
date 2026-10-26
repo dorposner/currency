@@ -247,6 +247,88 @@
         </div>
     </div>
 
+    <!-- Custom Street Rate Modal (Blue Dollar Engine) -->
+    <div id="custom-rate-modal" class="fixed inset-0 z-[85] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeCustomRateModal()"></div>
+        <div class="relative w-full max-w-md bg-card-light dark:bg-card-dark rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+            <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                    <div id="crm-flag" class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-inner"></div>
+                    <div>
+                        <h3 class="text-base font-bold flex items-center gap-1.5">
+                            <span id="crm-code"></span> Street & Blue Rate
+                        </h3>
+                        <p class="text-[11px] text-slate-500 font-medium" id="crm-name"></p>
+                    </div>
+                </div>
+                <button onclick="closeCustomRateModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="p-5 space-y-4">
+                <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/60 dark:border-slate-800/60">
+                    <div class="flex justify-between items-center text-xs text-slate-500 mb-1">
+                        <span>Official Bank Rate (1 USD):</span>
+                        <span id="crm-official-rate" class="font-mono font-bold text-slate-700 dark:text-slate-300">--</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-slate-500">
+                        <span>Current Effective Rate:</span>
+                        <span id="crm-current-rate" class="font-mono font-bold text-blue-600 dark:text-blue-400">--</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                        Custom Cash / Street Rate (per 1 USD)
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="number" 
+                            step="any" 
+                            id="crm-input-rate" 
+                            class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 font-mono text-xl font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            placeholder="Enter street rate..."
+                            oninput="updateCrmDeltaPreview()"
+                        >
+                    </div>
+                    <div id="crm-delta-badge" class="mt-2 text-xs font-medium text-slate-500 flex items-center gap-1.5 min-h-[20px]">
+                    </div>
+                </div>
+
+                <!-- Quick Multipliers -->
+                <div>
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">Quick Multipliers</span>
+                    <div class="grid grid-cols-4 gap-1.5">
+                        <button onclick="applyCrmPreset(1.10)" class="py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400">+10%</button>
+                        <button onclick="applyCrmPreset(1.20)" class="py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400">+20%</button>
+                        <button onclick="applyCrmPreset(1.30)" class="py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400">+30%</button>
+                        <button onclick="applyCrmOfficialReset()" class="py-1.5 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-xs font-medium text-rose-600 dark:text-rose-400">Reset</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Rate Note / Label (Optional)</label>
+                    <input 
+                        type="text" 
+                        id="crm-note" 
+                        class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                        placeholder="e.g. Florida St. Cash / Blue Dollar"
+                    >
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button onclick="saveCustomRate()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/25">
+                        Save Custom Rate
+                    </button>
+                    <button onclick="removeCustomRate()" id="crm-btn-remove" class="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium rounded-xl hover:bg-rose-100 dark:hover:bg-rose-900/30 hover:text-rose-600 transition-colors">
+                        Revert
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Chart Modal -->
     <div id="chart-modal" class="fixed inset-0 z-[80] hidden items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeChartModal()"></div>
@@ -310,6 +392,32 @@
         let baseValue = 100.0;
         let currentFocusId = null;
         let expression = "";
+
+        // Custom Street / Blue Dollar Rates State
+        let customRates = {};
+        try {
+            const savedCustom = localStorage.getItem('kesher_custom_rates');
+            if (savedCustom) {
+                customRates = JSON.parse(savedCustom);
+            }
+        } catch (e) {
+            console.error("Failed to load custom rates", e);
+        }
+
+        function saveCustomRates() {
+            try {
+                localStorage.setItem('kesher_custom_rates', JSON.stringify(customRates));
+            } catch (e) {
+                console.error("Failed to save custom rates", e);
+            }
+        }
+
+        function getEffectiveRate(code) {
+            if (customRates[code] && customRates[code].enabled && customRates[code].rate > 0) {
+                return customRates[code].rate;
+            }
+            return rates[code] || 1.0;
+        }
 
         // Elements
         const currencyListContainer = document.getElementById('currency-list');
@@ -500,7 +608,7 @@
             activeCurrencies.forEach(code => {
                 const value = convertValue(baseValue, baseCurrency, code);
                 const row = document.createElement('div');
-                row.className = 'bg-card-light dark:bg-card-dark rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-4 transition-all duration-300 hover:shadow-md group relative overflow-hidden';
+                row.className = 'bg-card-light dark:bg-card-dark rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-3.5 transition-all duration-300 hover:shadow-md group relative overflow-hidden';
                 row.id = `row-${code}`;
                 
                 row.draggable = true;
@@ -514,36 +622,54 @@
 
                 const flagColor = stringToHslColor(code, 40, 60);
                 const name = getCurrencyName(code);
+                const officialRate = rates[code] || 1.0;
+                const isCustom = !!(customRates[code] && customRates[code].enabled);
+                const effectiveRate = getEffectiveRate(code);
+                const deltaPct = officialRate > 0 ? ((effectiveRate - officialRate) / officialRate) * 100 : 0;
                 
+                const ratePillHtml = isCustom ? `
+                    <button onclick="openCustomRateModal('${code}')" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/40 flex items-center gap-1 shadow-sm hover:scale-105 transition-transform" title="Parallel market / Street rate active. Tap to modify.">
+                        ★ Blue: ${formatValue(effectiveRate)} <span class="opacity-80">(${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(0)}%)</span>
+                    </button>
+                ` : `
+                    <button onclick="openCustomRateModal('${code}')" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-1" title="Tap to set custom street rate or Blue Dollar">
+                        1 USD = ${formatValue(officialRate)} <svg class="w-2.5 h-2.5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </button>
+                `;
+
                 row.innerHTML = `
                     <div class="cursor-grab text-slate-300 hover:text-slate-500 dark:hover:text-slate-400 active:cursor-grabbing">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
                     </div>
                     <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-inner" style="background-color: ${flagColor}">
                         ${code.slice(0,2)}
                     </div>
-                    <div class="flex-grow">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-sm font-bold tracking-wider">${code}</span>
-                            <span class="text-[10px] text-slate-400 font-medium uppercase truncate max-w-[100px]">${name}</span>
+                    <div class="flex-grow min-w-0">
+                        <div class="flex items-center justify-between mb-1 gap-1">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-sm font-bold tracking-wider">${code}</span>
+                                ${ratePillHtml}
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-medium uppercase truncate max-w-[90px] text-right">${name}</span>
                         </div>
                         <div class="relative">
                             <input 
                                 type="text" 
                                 readonly
-                                class="currency-input w-full bg-transparent text-2xl font-mono font-medium focus:text-blue-600 dark:focus:text-blue-400"
+                                inputmode="none"
+                                class="currency-input w-full bg-transparent text-2xl font-mono font-medium focus:text-blue-600 dark:focus:text-blue-400 cursor-pointer"
                                 value="${formatValue(value)}"
                                 onclick="handleInputFocus('${code}')"
                                 id="input-${code}"
                             >
                         </div>
                     </div>
-                    <div class="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                        <button onclick="openChartModal('${code}')" class="p-1.5 text-slate-300 hover:text-blue-500 transition-colors bg-slate-50 dark:bg-slate-800/50 rounded-lg" title="View Trend">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    <div class="flex flex-col gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                        <button onclick="openChartModal('${code}')" class="p-1.5 text-slate-400 hover:text-blue-500 transition-colors bg-slate-100 dark:bg-slate-800 rounded-lg" title="View Trend">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
                         </button>
-                        <button onclick="removeCurrency('${code}')" class="p-1.5 text-slate-300 hover:text-rose-500 transition-colors bg-slate-50 dark:bg-slate-800/50 rounded-lg" title="Remove">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                        <button onclick="removeCurrency('${code}')" class="p-1.5 text-slate-400 hover:text-rose-500 transition-colors bg-slate-100 dark:bg-slate-800 rounded-lg" title="Remove">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                         </button>
                     </div>
                 `;
@@ -552,9 +678,131 @@
         }
 
         function convertValue(amount, from, to) {
-            if (!rates[from] || !rates[to]) return 0;
-            const amountInUsd = amount / rates[from];
-            return amountInUsd * rates[to];
+            const fromRate = getEffectiveRate(from);
+            const toRate = getEffectiveRate(to);
+            if (!fromRate || !toRate) return 0;
+            const amountInUsd = amount / fromRate;
+            return amountInUsd * toRate;
+        }
+
+        function updateAllInputValues() {
+            activeCurrencies.forEach(code => {
+                const input = document.getElementById(`input-${code}`);
+                if (input) {
+                    const val = convertValue(baseValue, baseCurrency, code);
+                    input.value = formatValue(val);
+                }
+            });
+        }
+
+        let currentCrmCode = null;
+
+        function openCustomRateModal(code) {
+            currentCrmCode = code;
+            const modal = document.getElementById('custom-rate-modal');
+            const codeEl = document.getElementById('crm-code');
+            const nameEl = document.getElementById('crm-name');
+            const flagEl = document.getElementById('crm-flag');
+            const officialEl = document.getElementById('crm-official-rate');
+            const currentEl = document.getElementById('crm-current-rate');
+            const inputEl = document.getElementById('crm-input-rate');
+            const noteEl = document.getElementById('crm-note');
+            const btnRemove = document.getElementById('crm-btn-remove');
+
+            const officialRate = rates[code] || 1.0;
+            const effectiveRate = getEffectiveRate(code);
+            const isCustom = !!(customRates[code] && customRates[code].enabled);
+
+            codeEl.textContent = code;
+            nameEl.textContent = getCurrencyName(code);
+            flagEl.textContent = code.slice(0, 2);
+            flagEl.style.backgroundColor = stringToHslColor(code, 40, 60);
+
+            officialEl.textContent = formatValue(officialRate) + ' ' + code;
+            currentEl.textContent = formatValue(effectiveRate) + ' ' + code;
+            inputEl.value = isCustom ? customRates[code].rate : officialRate;
+            noteEl.value = (isCustom && customRates[code].note) ? customRates[code].note : '';
+
+            btnRemove.style.display = isCustom ? 'block' : 'none';
+
+            updateCrmDeltaPreview();
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeCustomRateModal() {
+            const modal = document.getElementById('custom-rate-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            currentCrmCode = null;
+        }
+
+        function updateCrmDeltaPreview() {
+            if (!currentCrmCode) return;
+            const official = rates[currentCrmCode] || 1.0;
+            const inputVal = parseFloat(document.getElementById('crm-input-rate').value);
+            const badgeEl = document.getElementById('crm-delta-badge');
+
+            if (!inputVal || isNaN(inputVal) || inputVal <= 0) {
+                badgeEl.innerHTML = '<span class="text-rose-500">Please enter a valid rate greater than 0</span>';
+                return;
+            }
+
+            const deltaPct = ((inputVal - official) / official) * 100;
+            const sign = deltaPct >= 0 ? '+' : '';
+            const colorClass = Math.abs(deltaPct) < 0.1 
+                ? 'text-slate-500' 
+                : deltaPct > 0 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-blue-600 dark:text-blue-400 font-bold';
+
+            badgeEl.innerHTML = `
+                <span class="${colorClass}">Delta: ${sign}${deltaPct.toFixed(1)}% vs official interbank rate</span>
+                ${Math.abs(deltaPct) > 5 ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold">Parallel Market</span>' : ''}
+            `;
+        }
+
+        function applyCrmPreset(multiplier) {
+            if (!currentCrmCode) return;
+            const official = rates[currentCrmCode] || 1.0;
+            const newRate = Number((official * multiplier).toFixed(4));
+            document.getElementById('crm-input-rate').value = newRate;
+            updateCrmDeltaPreview();
+        }
+
+        function applyCrmOfficialReset() {
+            if (!currentCrmCode) return;
+            const official = rates[currentCrmCode] || 1.0;
+            document.getElementById('crm-input-rate').value = official;
+            updateCrmDeltaPreview();
+        }
+
+        function saveCustomRate() {
+            if (!currentCrmCode) return;
+            const inputVal = parseFloat(document.getElementById('crm-input-rate').value);
+            const noteVal = document.getElementById('crm-note').value.trim();
+
+            if (!inputVal || isNaN(inputVal) || inputVal <= 0) return;
+
+            customRates[currentCrmCode] = {
+                rate: inputVal,
+                enabled: true,
+                note: noteVal || 'Street Cash Rate',
+                updatedAt: Date.now()
+            };
+            saveCustomRates();
+            closeCustomRateModal();
+            renderCurrencyRows();
+            updateAllInputValues();
+        }
+
+        function removeCustomRate() {
+            if (!currentCrmCode) return;
+            if (customRates[currentCrmCode]) {
+                delete customRates[currentCrmCode];
+                saveCustomRates();
+            }
+            closeCustomRateModal();
+            renderCurrencyRows();
+            updateAllInputValues();
         }
 
         function formatValue(val) {
