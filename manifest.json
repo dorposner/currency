@@ -1,20 +1,42 @@
 {
-  "name": "Multi-Way Converter",
-  "short_name": "Converter",
+  "name": "Kesher Money — Multi-Way Travel Currency Converter",
+  "short_name": "Kesher Money",
+  "description": "Fast, 100% ad-free, offline-first simultaneous multi-currency converter and calculator built for world travelers and digital nomads.",
   "start_url": "./index.html",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0f172a",
-  "theme_color": "#3b82f6",
+  "theme_color": "#2563eb",
+  "categories": ["finance", "travel", "utilities"],
   "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Converter",
+      "url": "./index.html",
+      "description": "Quick currency conversion"
     }
   ]
 }
