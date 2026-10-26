@@ -195,39 +195,45 @@
 
     <!-- Smart Numeric Keyboard -->
     <div id="smart-keyboard" class="fixed bottom-0 left-0 right-0 glass border-t border-slate-200 dark:border-slate-800 transform translate-y-full transition-transform duration-300 z-[60] pb-safe">
-        <div class="max-w-md mx-auto p-4 grid grid-cols-4 gap-2">
-            <!-- Keyboard Header/Display for expression -->
-            <div class="col-span-4 mb-2 px-2 py-1 bg-slate-100 dark:bg-slate-900/50 rounded-lg flex justify-between items-center">
-                <span id="kb-expression" class="text-xs font-mono text-slate-500 dark:text-slate-400 overflow-hidden text-ellipsis whitespace-nowrap"></span>
-                <button onclick="closeKeyboard()" class="p-1 text-slate-400 hover:text-slate-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        <div class="max-w-md mx-auto p-3.5 grid grid-cols-4 gap-2">
+            <!-- Keyboard Header Display for expression & live result -->
+            <div class="col-span-4 px-3 py-1.5 bg-slate-100 dark:bg-slate-900/60 rounded-xl flex justify-between items-center border border-slate-200/50 dark:border-slate-800/50 mb-1">
+                <div class="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
+                    <span id="kb-expression" class="text-xs font-mono text-slate-500 dark:text-slate-400"></span>
+                    <span id="kb-eval-preview" class="text-xs font-mono font-bold text-blue-600 dark:text-blue-400"></span>
+                </div>
+                <button onclick="closeKeyboard(); triggerHaptic();" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors" title="Close Keypad">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                 </button>
             </div>
             
-            <button onclick="kbPress('7')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">7</button>
-            <button onclick="kbPress('8')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">8</button>
-            <button onclick="kbPress('9')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">9</button>
-            <button onclick="kbPress('/')" class="h-14 rounded-xl bg-slate-100 dark:bg-slate-800 text-blue-500 font-bold text-xl key-shadow border border-slate-200 dark:border-slate-700">/</button>
+            <button onclick="kbPress('7')" class="h-14 rounded-2xl bg-card-light dark:bg-card-dark font-medium text-xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">7</button>
+            <button onclick="kbPress('8')" class="h-14 rounded-2xl bg-card-light dark:bg-card-dark font-medium text-xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">8</button>
+            <button onclick="kbPress('9')" class="h-14 rounded-2xl bg-card-light dark:bg-card-dark font-medium text-xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">9</button>
+            <button onclick="kbPress('/')" class="h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-bold text-2xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">÷</button>
             
-            <button onclick="kbPress('4')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">4</button>
-            <button onclick="kbPress('5')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">5</button>
-            <button onclick="kbPress('6')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">6</button>
-            <button onclick="kbPress('*')" class="h-14 rounded-xl bg-slate-100 dark:bg-slate-800 text-blue-500 font-bold text-xl key-shadow border border-slate-200 dark:border-slate-700">×</button>
+            <button onclick="kbPress('4')" class="h-14 rounded-2xl bg-card-light dark:bg-card-dark font-medium text-xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">4</button>
+            <button onclick="kbPress('5')" class="h-14 rounded-2xl bg-card-light dark:bg-card-dark font-medium text-xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">5</button>
+            <button onclick="kbPress('6')" class="h-14 rounded-2xl bg-card-light dark:bg-card-dark font-medium text-xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">6</button>
+            <button onclick="kbPress('*')" class="h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-bold text-2xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">×</button>
             
-            <button onclick="kbPress('1')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">1</button>
-            <button onclick="kbPress('2')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">2</button>
-            <button onclick="kbPress('3')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">3</button>
-            <button onclick="kbPress('-')" class="h-14 rounded-xl bg-slate-100 dark:bg-slate-800 text-blue-500 font-bold text-xl key-shadow border border-slate-200 dark:border-slate-700">-</button>
+            <button onclick="kbPress('1')" class="h-14 rounded-2xl bg-card-light dark:bg-card-dark font-medium text-xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">1</button>
+            <button onclick="kbPress('2')" class="h-14 rounded-2xl bg-card-light dark:bg-card-dark font-medium text-xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">2</button>
+            <button onclick="kbPress('3')" class="h-14 rounded-2xl bg-card-light dark:bg-card-dark font-medium text-xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">3</button>
+            <button onclick="kbPress('-')" class="h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-bold text-2xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">−</button>
             
-            <button onclick="kbPress('0')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">0</button>
-            <button onclick="kbPress('.')" class="h-14 rounded-xl bg-card-light dark:bg-card-dark font-medium text-lg key-shadow border border-slate-200 dark:border-slate-700">.</button>
-            <button onclick="kbClear()" class="h-14 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-500 font-bold key-shadow border border-rose-100 dark:border-rose-900/30">C</button>
-            <button onclick="kbPress('+')" class="h-14 rounded-xl bg-slate-100 dark:bg-slate-800 text-blue-500 font-bold text-xl key-shadow border border-slate-200 dark:border-slate-700">+</button>
+            <button onclick="kbPress('0')" class="h-14 rounded-2xl bg-card-light dark:bg-card-dark font-medium text-xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">0</button>
+            <button onclick="kbPress('.')" class="h-14 rounded-2xl bg-card-light dark:bg-card-dark font-medium text-xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">.</button>
+            <button onclick="kbClear()" class="h-14 rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 font-bold text-lg key-shadow border border-rose-200 dark:border-rose-900/30 active:scale-95 transition-transform">C</button>
+            <button onclick="kbPress('+')" class="h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-bold text-2xl key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">+</button>
 
-            <button onclick="kbBackspace()" class="col-span-1 h-14 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center key-shadow border border-slate-200 dark:border-slate-700">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+            <button onclick="kbBackspace()" class="col-span-1 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center key-shadow border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform" title="Backspace">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
             </button>
-            <button onclick="kbEvaluate()" class="col-span-3 h-14 rounded-xl bg-blue-600 text-white font-bold text-xl key-shadow shadow-blue-500/20">=</button>
+            <button onclick="kbEvaluate()" class="col-span-2 h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-2xl key-shadow shadow-blue-500/20 active:scale-95 transition-transform flex items-center justify-center">=</button>
+            <button onclick="closeKeyboard(); triggerHaptic();" class="col-span-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold key-shadow shadow-emerald-500/20 active:scale-95 transition-transform flex items-center justify-center" title="Done">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
         </div>
     </div>
 
@@ -869,16 +875,40 @@
             });
         }
 
-        // Interaction Handlers
+        // Interaction Handlers & Haptics
+        let lastTapTime = 0;
+        let lastTapCode = null;
+
+        function triggerHaptic(duration = 10) {
+            try {
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(duration);
+                }
+            } catch (e) {}
+        }
+
         function handleInputFocus(code) {
+            const now = Date.now();
+            if (currentFocusId === code && lastTapCode === code && (now - lastTapTime < 350)) {
+                triggerHaptic(20);
+                kbClear();
+                lastTapTime = 0;
+                lastTapCode = null;
+                return;
+            }
+            lastTapTime = now;
+            lastTapCode = code;
+
             currentFocusId = code;
-            expression = document.getElementById(`input-${code}`).value;
+            const targetInput = document.getElementById(`input-${code}`);
+            expression = targetInput ? targetInput.value : "0";
             updateExpressionDisplay();
+            triggerHaptic(8);
             
             // Highlight focused row
-            document.querySelectorAll('[id^="row-"]').forEach(el => el.classList.remove('ring-2', 'ring-blue-500/50', 'bg-blue-50/10'));
+            document.querySelectorAll('[id^="row-"]').forEach(el => el.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50/15', 'dark:bg-blue-900/15'));
             const activeRow = document.getElementById(`row-${code}`);
-            if (activeRow) activeRow.classList.add('ring-2', 'ring-blue-500/50', 'bg-blue-50/10');
+            if (activeRow) activeRow.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50/15', 'dark:bg-blue-900/15');
             
             // Show keyboard
             keyboard.classList.remove('translate-y-full');
@@ -899,7 +929,7 @@
 
         function closeKeyboard() {
             keyboard.classList.add('translate-y-full');
-            document.querySelectorAll('[id^="row-"]').forEach(el => el.classList.remove('ring-2', 'ring-blue-500/50', 'bg-blue-50/10'));
+            document.querySelectorAll('[id^="row-"]').forEach(el => el.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50/15', 'dark:bg-blue-900/15'));
             
             const mainContent = document.querySelector('main');
             if (mainContent) {
@@ -908,19 +938,22 @@
         }
 
         function kbPress(char) {
-            if (expression === "0") expression = "";
+            triggerHaptic(8);
+            if (expression === "0" && char !== ".") expression = "";
             expression += char;
             updateExpressionDisplay();
             updateLive();
         }
 
         function kbClear() {
+            triggerHaptic(15);
             expression = "0";
             updateExpressionDisplay();
             updateLive();
         }
 
         function kbBackspace() {
+            triggerHaptic(10);
             expression = expression.slice(0, -1);
             if (expression === "") expression = "0";
             updateExpressionDisplay();
@@ -929,44 +962,62 @@
 
         function updateExpressionDisplay() {
             expressionDisplay.innerText = expression;
+            const evalPreview = document.getElementById('kb-eval-preview');
             const activeInput = document.getElementById(`input-${currentFocusId}`);
             if (activeInput) activeInput.value = expression;
+
+            if (/[+\-*/]/.test(expression)) {
+                try {
+                    const sanitized = expression.replace(/[^0-9.\+\-\*\/]/g, '');
+                    if (/[0-9]$/.test(sanitized)) {
+                        const res = eval(sanitized);
+                        if (evalPreview && !isNaN(res)) {
+                            evalPreview.innerText = `= ${formatValue(res)}`;
+                            return;
+                        }
+                    }
+                } catch (e) {}
+            }
+            if (evalPreview) evalPreview.innerText = '';
         }
 
         function updateLive() {
             try {
-                // Try evaluating for reactivity, but only if it's a valid number/simple expression
-                // We use a safe subset for live updates
                 const sanitized = expression.replace(/[^0-9.\+\-\*\/]/g, '');
                 if (!sanitized) return;
                 
-                // Only update others if last char isn't an operator
                 if (/[0-9]$/.test(sanitized)) {
                     const result = eval(sanitized);
-                    baseValue = result;
-                    baseCurrency = currentFocusId;
-                    
-                    activeCurrencies.forEach(code => {
-                        if (code !== currentFocusId) {
-                            const val = convertValue(baseValue, baseCurrency, code);
-                            const input = document.getElementById(`input-${code}`);
-                            if (input) input.value = formatValue(val);
-                        }
-                    });
+                    if (!isNaN(result)) {
+                        baseValue = result;
+                        baseCurrency = currentFocusId;
+                        
+                        activeCurrencies.forEach(code => {
+                            if (code !== currentFocusId) {
+                                const val = convertValue(baseValue, baseCurrency, code);
+                                const input = document.getElementById(`input-${code}`);
+                                if (input) input.value = formatValue(val);
+                            }
+                        });
+                    }
                 }
-            } catch (e) {
-                // Don't update others on invalid expression state
-            }
+            } catch (e) {}
         }
 
         function kbEvaluate() {
+            triggerHaptic(18);
             try {
-                const result = eval(expression.replace(/[^0-9.\+\-\*\/]/g, ''));
-                expression = formatValue(result);
-                updateExpressionDisplay();
-                updateLive();
+                const sanitized = expression.replace(/[^0-9.\+\-\*\/]/g, '');
+                const result = eval(sanitized);
+                if (!isNaN(result)) {
+                    expression = formatValue(result);
+                    baseValue = result;
+                    baseCurrency = currentFocusId;
+                    updateExpressionDisplay();
+                    updateAllInputValues();
+                }
             } catch (e) {
-                expression = "Error";
+                expression = "0";
                 updateExpressionDisplay();
             }
         }
