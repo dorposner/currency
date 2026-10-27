@@ -276,14 +276,27 @@
     <!-- Currency Selection Modal -->
     <div id="currency-modal" class="fixed inset-0 z-[70] hidden items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeCurrencyModal()"></div>
-        <div class="relative w-full max-w-md bg-card-light dark:bg-card-dark rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
-            <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+        <div class="relative w-full max-w-md bg-card-light dark:bg-card-dark rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[82vh]">
+            <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
                 <h3 class="text-lg font-bold">Add Currency</h3>
-                <button onclick="closeCurrencyModal()" class="text-slate-400 hover:text-slate-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                <button onclick="closeCurrencyModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
             </div>
-            <div class="p-4 max-h-[60vh] overflow-y-auto no-scrollbar space-y-2" id="modal-currency-list">
+            <!-- Live Search Bar -->
+            <div class="p-3 border-b border-slate-200/60 dark:border-slate-800/60">
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="currency-search-input" 
+                        placeholder="Search country, currency, code (e.g. Thailand, CRC, Euro)..."
+                        class="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        oninput="filterModalCurrencies(this.value)"
+                    >
+                    <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+            </div>
+            <div class="p-3 overflow-y-auto no-scrollbar space-y-1.5 flex-1" id="modal-currency-list">
                 <!-- Selectable currencies injected by JS -->
             </div>
         </div>
@@ -295,7 +308,7 @@
         <div class="relative w-full max-w-md bg-card-light dark:bg-card-dark rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
             <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
                 <div class="flex items-center gap-2.5">
-                    <div id="crm-flag" class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-inner"></div>
+                    <div id="crm-flag" class="w-10 h-10 rounded-2xl flex items-center justify-center text-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-sm select-none"></div>
                     <div>
                         <h3 class="text-base font-bold flex items-center gap-1.5">
                             <span id="crm-code"></span> Street & Blue Rate
@@ -684,12 +697,161 @@
         const modal = document.getElementById('currency-modal');
         const offlineStatus = document.getElementById('offline-status');
 
+        function getFlagEmoji(countryCode) {
+            if (!countryCode || countryCode.length < 2) return '🌐';
+            const code = countryCode.toUpperCase();
+            try {
+                return String.fromCodePoint(
+                    127397 + code.charCodeAt(0),
+                    127397 + code.charCodeAt(1)
+                );
+            } catch (e) {
+                return '🌐';
+            }
+        }
+
+        const CURRENCY_DATA = {
+            USD: { country: "United States", flag: "🇺🇸", name: "US Dollar", symbol: "$" },
+            EUR: { country: "Eurozone", flag: "🇪🇺", name: "Euro", symbol: "€" },
+            ILS: { country: "Israel", flag: "🇮🇱", name: "Israeli Shekel", symbol: "₪" },
+            THB: { country: "Thailand", flag: "🇹🇭", name: "Thai Baht", symbol: "฿" },
+            CRC: { country: "Costa Rica", flag: "🇨🇷", name: "Costa Rican Colón", symbol: "₡" },
+            MXN: { country: "Mexico", flag: "🇲🇽", name: "Mexican Peso", symbol: "$" },
+            GBP: { country: "United Kingdom", flag: "🇬🇧", name: "British Pound", symbol: "£" },
+            JPY: { country: "Japan", flag: "🇯🇵", name: "Japanese Yen", symbol: "¥" },
+            CAD: { country: "Canada", flag: "🇨🇦", name: "Canadian Dollar", symbol: "$" },
+            AUD: { country: "Australia", flag: "🇦🇺", name: "Australian Dollar", symbol: "$" },
+            CHF: { country: "Switzerland", flag: "🇨🇭", name: "Swiss Franc", symbol: "CHF" },
+            ARS: { country: "Argentina", flag: "🇦🇷", name: "Argentine Peso", symbol: "$" },
+            BRL: { country: "Brazil", flag: "🇧🇷", name: "Brazilian Real", symbol: "R$" },
+            COP: { country: "Colombia", flag: "🇨🇴", name: "Colombian Peso", symbol: "$" },
+            PEN: { country: "Peru", flag: "🇵🇪", name: "Peruvian Sol", symbol: "S/" },
+            CLP: { country: "Chile", flag: "🇨🇱", name: "Chilean Peso", symbol: "$" },
+            VND: { country: "Vietnam", flag: "🇻🇳", name: "Vietnamese Dong", symbol: "₫" },
+            IDR: { country: "Indonesia", flag: "🇮🇩", name: "Indonesian Rupiah", symbol: "Rp" },
+            INR: { country: "India", flag: "🇮🇳", name: "Indian Rupee", symbol: "₹" },
+            TRY: { country: "Turkey", flag: "🇹🇷", name: "Turkish Lira", symbol: "₺" },
+            ZAR: { country: "South Africa", flag: "🇿🇦", name: "South African Rand", symbol: "R" },
+            AED: { country: "United Arab Emirates", flag: "🇦🇪", name: "UAE Dirham", symbol: "د.إ" },
+            SGD: { country: "Singapore", flag: "🇸🇬", name: "Singapore Dollar", symbol: "S$" },
+            PHP: { country: "Philippines", flag: "🇵🇭", name: "Philippine Peso", symbol: "₱" },
+            MYR: { country: "Malaysia", flag: "🇲🇾", name: "Malaysian Ringgit", symbol: "RM" },
+            EGP: { country: "Egypt", flag: "🇪🇬", name: "Egyptian Pound", symbol: "E£" },
+            CZK: { country: "Czech Republic", flag: "🇨🇿", name: "Czech Koruna", symbol: "Kč" },
+            HUF: { country: "Hungary", flag: "🇭🇺", name: "Hungarian Forint", symbol: "Ft" },
+            PLN: { country: "Poland", flag: "🇵🇱", name: "Polish Zloty", symbol: "zł" },
+            SEK: { country: "Sweden", flag: "🇸🇪", name: "Swedish Krona", symbol: "kr" },
+            NOK: { country: "Norway", flag: "🇳🇴", name: "Norwegian Krone", symbol: "kr" },
+            DKK: { country: "Denmark", flag: "🇩🇰", name: "Danish Krone", symbol: "kr" },
+            NZD: { country: "New Zealand", flag: "🇳🇿", name: "New Zealand Dollar", symbol: "$" },
+            GEL: { country: "Georgia", flag: "🇬🇪", name: "Georgian Lari", symbol: "₾" },
+            JOD: { country: "Jordan", flag: "🇯🇴", name: "Jordanian Dinar", symbol: "JD" },
+            RSD: { country: "Serbia", flag: "🇷🇸", name: "Serbian Dinar", symbol: "дин." },
+            BAM: { country: "Bosnia & Herzegovina", flag: "🇧🇦", name: "Convertible Mark", symbol: "KM" },
+            ALL: { country: "Albania", flag: "🇦🇱", name: "Albanian Lek", symbol: "L" },
+            MAD: { country: "Morocco", flag: "🇲🇦", name: "Moroccan Dirham", symbol: "MAD" },
+            KHR: { country: "Cambodia", flag: "🇰🇭", name: "Cambodian Riel", symbol: "៛" },
+            LAK: { country: "Laos", flag: "🇱🇦", name: "Lao Kip", symbol: "₭" },
+            LKR: { country: "Sri Lanka", flag: "🇱🇰", name: "Sri Lankan Rupee", symbol: "Rs" },
+            NPR: { country: "Nepal", flag: "🇳🇵", name: "Nepalese Rupee", symbol: "Rs" },
+            KRW: { country: "South Korea", flag: "🇰🇷", name: "South Korean Won", symbol: "₩" },
+            CNY: { country: "China", flag: "🇨🇳", name: "Chinese Yuan", symbol: "¥" },
+            HKD: { country: "Hong Kong", flag: "🇭🇰", name: "Hong Kong Dollar", symbol: "HK$" },
+            TWD: { country: "Taiwan", flag: "🇹🇼", name: "New Taiwan Dollar", symbol: "NT$" },
+            SAR: { country: "Saudi Arabia", flag: "🇸🇦", name: "Saudi Riyal", symbol: "SR" },
+            QAR: { country: "Qatar", flag: "🇶🇦", name: "Qatari Riyal", symbol: "QR" },
+            OMR: { country: "Oman", flag: "🇴🇲", name: "Omani Rial", symbol: "OMR" },
+            KWD: { country: "Kuwait", flag: "🇰🇼", name: "Kuwaiti Dinar", symbol: "KD" },
+            BHD: { country: "Bahrain", flag: "🇧🇭", name: "Bahraini Dinar", symbol: "BD" },
+            GTQ: { country: "Guatemala", flag: "🇬🇹", name: "Guatemalan Quetzal", symbol: "Q" },
+            PAB: { country: "Panama", flag: "🇵🇦", name: "Panamanian Balboa", symbol: "B/." },
+            DOP: { country: "Dominican Republic", flag: "🇩🇴", name: "Dominican Peso", symbol: "RD$" },
+            ISK: { country: "Iceland", flag: "🇮🇸", name: "Icelandic Krona", symbol: "kr" },
+            RON: { country: "Romania", flag: "🇷🇴", name: "Romanian Leu", symbol: "lei" },
+            BGN: { country: "Bulgaria", flag: "🇧🇬", name: "Bulgarian Lev", symbol: "лв" },
+            MKD: { country: "North Macedonia", flag: "🇲🇰", name: "Macedonian Denar", symbol: "ден" },
+            KES: { country: "Kenya", flag: "🇰🇪", name: "Kenyan Shilling", symbol: "KSh" },
+            TZS: { country: "Tanzania", flag: "🇹🇿", name: "Tanzanian Shilling", symbol: "TSh" },
+            UGX: { country: "Uganda", flag: "🇺🇬", name: "Ugandan Shilling", symbol: "USh" },
+            RWF: { country: "Rwanda", flag: "🇷🇼", name: "Rwandan Franc", symbol: "RF" },
+            MUR: { country: "Mauritius", flag: "🇲🇺", name: "Mauritian Rupee", symbol: "Rs" },
+            UYU: { country: "Uruguay", flag: "🇺🇾", name: "Uruguayan Peso", symbol: "$U" },
+            BOB: { country: "Bolivia", flag: "🇧🇴", name: "Bolivian Boliviano", symbol: "Bs." },
+            PYG: { country: "Paraguay", flag: "🇵🇾", name: "Paraguayan Guarani", symbol: "₲" },
+            JMD: { country: "Jamaica", flag: "🇯🇲", name: "Jamaican Dollar", symbol: "J$" },
+            TTD: { country: "Trinidad & Tobago", flag: "🇹🇹", name: "Trinidad & Tobago Dollar", symbol: "TT$" },
+            BBD: { country: "Barbados", flag: "🇧🇧", name: "Barbadian Dollar", symbol: "Bds$" },
+            BZD: { country: "Belize", flag: "🇧🇿", name: "Belize Dollar", symbol: "BZ$" },
+            FJD: { country: "Fiji", flag: "🇫🇯", name: "Fijian Dollar", symbol: "FJ$" },
+            MNT: { country: "Mongolia", flag: "🇲🇳", name: "Mongolian Tugrik", symbol: "₮" },
+            KZT: { country: "Kazakhstan", flag: "🇰🇿", name: "Kazakhstani Tenge", symbol: "₸" },
+            UZS: { country: "Uzbekistan", flag: "🇺🇿", name: "Uzbekistani Som", symbol: "UZS" },
+            AMD: { country: "Armenia", flag: "🇦🇲", name: "Armenian Dram", symbol: "֏" },
+            AZN: { country: "Azerbaijan", flag: "🇦🇿", name: "Azerbaijani Manat", symbol: "₼" },
+            MDL: { country: "Moldova", flag: "🇲🇩", name: "Moldovan Leu", symbol: "L" },
+            UAH: { country: "Ukraine", flag: "🇺🇦", name: "Ukrainian Hryvnia", symbol: "₴" },
+            PKR: { country: "Pakistan", flag: "🇵🇰", name: "Pakistani Rupee", symbol: "₨" },
+            BDT: { country: "Bangladesh", flag: "🇧🇩", name: "Bangladeshi Taka", symbol: "৳" },
+            MMK: { country: "Myanmar", flag: "🇲🇲", name: "Myanmar Kyat", symbol: "K" },
+            MVR: { country: "Maldives", flag: "🇲🇻", name: "Maldivian Rufiyaa", symbol: "Rf" },
+            BND: { country: "Brunei", flag: "🇧🇳", name: "Brunei Dollar", symbol: "B$" },
+            NGN: { country: "Nigeria", flag: "🇳🇬", name: "Nigerian Naira", symbol: "₦" },
+            GHS: { country: "Ghana", flag: "🇬🇭", name: "Ghanaian Cedi", symbol: "GH₵" },
+            ETB: { country: "Ethiopia", flag: "🇪🇹", name: "Ethiopian Birr", symbol: "Br" },
+            XOF: { country: "West Africa", flag: "🌍", name: "CFA Franc BCEAO", symbol: "CFA" },
+            XAF: { country: "Central Africa", flag: "🌍", name: "CFA Franc BEAC", symbol: "FCFA" },
+            XCD: { country: "East Caribbean", flag: "🏝️", name: "East Caribbean Dollar", symbol: "EC$" },
+            ANG: { country: "Curaçao & Sint Maarten", flag: "🇨🇼", name: "Antillean Guilder", symbol: "NAƒ" },
+            AWG: { country: "Aruba", flag: "🇦🇼", name: "Aruban Florin", symbol: "Afl." },
+            BSD: { country: "Bahamas", flag: "🇧🇸", name: "Bahamian Dollar", symbol: "B$" },
+            CUP: { country: "Cuba", flag: "🇨🇺", name: "Cuban Peso", symbol: "₱" },
+            HNL: { country: "Honduras", flag: "🇭🇳", name: "Honduran Lempira", symbol: "L" },
+            NIO: { country: "Nicaragua", flag: "🇳🇮", name: "Nicaraguan Córdoba", symbol: "C$" },
+            LBP: { country: "Lebanon", flag: "🇱🇧", name: "Lebanese Pound", symbol: "L£" },
+            IQD: { country: "Iraq", flag: "🇮🇶", name: "Iraqi Dinar", symbol: "ع.ד" },
+            DZD: { country: "Algeria", flag: "🇩🇿", name: "Algerian Dinar", symbol: "DA" },
+            TND: { country: "Tunisia", flag: "🇹🇳", name: "Tunisian Dinar", symbol: "DT" },
+            LYD: { country: "Libya", flag: "🇱🇾", name: "Libyan Dinar", symbol: "LD" },
+            MZN: { country: "Mozambique", flag: "🇲🇿", name: "Mozambican Metical", symbol: "MT" },
+            NAD: { country: "Namibia", flag: "🇳🇦", name: "Namibian Dollar", symbol: "N$" },
+            BWP: { country: "Botswana", flag: "🇧🇼", name: "Botswana Pula", symbol: "P" },
+            ZMW: { country: "Zambia", flag: "🇿🇲", name: "Zambian Kwacha", symbol: "ZK" },
+            MGA: { country: "Madagascar", flag: "🇲🇬", name: "Malagasy Ariary", symbol: "Ar" },
+            SCR: { country: "Seychelles", flag: "🇸🇨", name: "Seychellois Rupee", symbol: "SR" },
+            CVE: { country: "Cape Verde", flag: "🇨🇻", name: "Cape Verdean Escudo", symbol: "Esc" },
+            PGK: { country: "Papua New Guinea", flag: "🇵🇬", name: "Papua New Guinean Kina", symbol: "K" },
+            WST: { country: "Samoa", flag: "🇼🇸", name: "Samoan Tala", symbol: "WS$" },
+            VUV: { country: "Vanuatu", flag: "🇻🇺", name: "Vanuatu Vatu", symbol: "VT" },
+            TOP: { country: "Tonga", flag: "🇹🇴", name: "Tongan Paʻanga", symbol: "T$" },
+            SBD: { country: "Solomon Islands", flag: "🇸🇧", name: "Solomon Islands Dollar", symbol: "SI$" },
+            BTN: { country: "Bhutan", flag: "🇧🇹", name: "Bhutanese Ngultrum", symbol: "Nu." },
+            MOP: { country: "Macau", flag: "🇲🇴", name: "Macanese Pataca", symbol: "MOP$" }
+        };
+
+        function getCurrencyMeta(code) {
+            if (CURRENCY_DATA[code]) return CURRENCY_DATA[code];
+            
+            let flag = '🌐';
+            if (code && code.length >= 2) {
+                flag = getFlagEmoji(code.slice(0, 2));
+            }
+            
+            let fallbackName = code;
+            try {
+                fallbackName = currencyDisplayNames.of(code) || code;
+            } catch (e) {}
+
+            return {
+                country: fallbackName,
+                flag: flag,
+                name: fallbackName,
+                symbol: code
+            };
+        }
+
         function getCurrencyName(code) {
-             try {
-                 return currencyDisplayNames.of(code) || code;
-             } catch (e) {
-                 return code;
-             }
+            const meta = getCurrencyMeta(code);
+            return meta.name || code;
         }
 
         function getRelativeTime(timestamp) {
@@ -878,8 +1040,7 @@
                 row.addEventListener('dragleave', handleDragLeave);
                 row.addEventListener('dragend', handleDragEnd);
 
-                const flagColor = stringToHslColor(code, 40, 60);
-                const name = getCurrencyName(code);
+                const meta = getCurrencyMeta(code);
                 const officialRate = rates[code] || 1.0;
                 const isCustom = !!(customRates[code] && customRates[code].enabled);
                 const effectiveRate = getEffectiveRate(code);
@@ -899,16 +1060,17 @@
                     <div class="cursor-grab text-slate-300 hover:text-slate-500 dark:hover:text-slate-400 active:cursor-grabbing">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
                     </div>
-                    <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-inner" style="background-color: ${flagColor}">
-                        ${code.slice(0,2)}
+                    <div class="flex-shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center text-2xl bg-slate-100 dark:bg-slate-800 shadow-sm border border-slate-200/80 dark:border-slate-700/80 select-none">
+                        ${meta.flag}
                     </div>
                     <div class="flex-grow min-w-0">
                         <div class="flex items-center justify-between mb-1 gap-1">
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="text-sm font-bold tracking-wider">${code}</span>
+                            <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                                <span class="text-sm font-black tracking-wider">${code}</span>
+                                <span class="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[125px] sm:max-w-[200px]" title="${meta.country}">${meta.country}</span>
                                 ${ratePillHtml}
                             </div>
-                            <span class="text-[10px] text-slate-400 font-medium uppercase truncate max-w-[90px] text-right">${name}</span>
+                            <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate max-w-[95px] text-right">${meta.name}</span>
                         </div>
                         <div class="relative">
                             <input 
@@ -971,10 +1133,11 @@
             const effectiveRate = getEffectiveRate(code);
             const isCustom = !!(customRates[code] && customRates[code].enabled);
 
+            const meta = getCurrencyMeta(code);
             codeEl.textContent = code;
-            nameEl.textContent = getCurrencyName(code);
-            flagEl.textContent = code.slice(0, 2);
-            flagEl.style.backgroundColor = stringToHslColor(code, 40, 60);
+            nameEl.textContent = `${meta.country} — ${meta.name}`;
+            flagEl.textContent = meta.flag;
+            flagEl.style.backgroundColor = '';
 
             officialEl.textContent = formatValue(officialRate) + ' ' + code;
             currentEl.textContent = formatValue(effectiveRate) + ' ' + code;
@@ -1292,9 +1455,21 @@
             if (currentFocusId === code) closeKeyboard();
         }
 
+        let modalSearchQuery = '';
+
+        function filterModalCurrencies(query) {
+            modalSearchQuery = (query || '').toLowerCase().trim();
+            populateModal();
+        }
+
         function openCurrencyModal() {
+            modalSearchQuery = '';
+            const searchInput = document.getElementById('currency-search-input');
+            if (searchInput) searchInput.value = '';
+            populateModal();
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            if (searchInput) setTimeout(() => searchInput.focus(), 100);
         }
 
         function closeCurrencyModal() {
@@ -1304,29 +1479,50 @@
 
         function populateModal() {
             const modalList = document.getElementById('modal-currency-list');
+            if (!modalList) return;
             modalList.innerHTML = '';
-            Object.keys(rates).sort().forEach(code => {
-                if (!activeCurrencies.includes(code)) {
-                    const btn = document.createElement('button');
-                    const name = getCurrencyName(code);
-                    btn.className = 'w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 text-left';
-                    btn.onclick = () => addCurrency(code);
-                    btn.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style="background-color: ${stringToHslColor(code, 40, 60)}">
-                                ${code.slice(0,2)}
-                            </div>
-                            <div>
-                                <div class="font-bold text-sm">${code}</div>
-                                <div class="text-[10px] text-slate-500">${name}</div>
-                            </div>
+
+            const availableCodes = Object.keys(rates).sort().filter(code => !activeCurrencies.includes(code));
+            
+            const filteredCodes = modalSearchQuery ? availableCodes.filter(code => {
+                const meta = getCurrencyMeta(code);
+                return code.toLowerCase().includes(modalSearchQuery) ||
+                       meta.country.toLowerCase().includes(modalSearchQuery) ||
+                       meta.name.toLowerCase().includes(modalSearchQuery);
+            }) : availableCodes;
+
+            if (filteredCodes.length === 0) {
+                modalList.innerHTML = `
+                    <div class="py-10 text-center text-xs text-slate-400">
+                        No currencies found matching "${modalSearchQuery}"
+                    </div>
+                `;
+                return;
+            }
+
+            filteredCodes.forEach(code => {
+                const btn = document.createElement('button');
+                const meta = getCurrencyMeta(code);
+                btn.className = 'w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 text-left group';
+                btn.onclick = () => addCurrency(code);
+                btn.innerHTML = `
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl bg-slate-100 dark:bg-slate-800 shadow-sm border border-slate-200/80 dark:border-slate-700 select-none flex-shrink-0">
+                            ${meta.flag}
                         </div>
-                        <div class="text-blue-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                        <div class="min-w-0">
+                            <div class="font-bold text-sm flex items-center gap-1.5 flex-wrap">
+                                <span>${code}</span>
+                                <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">${meta.country}</span>
+                            </div>
+                            <div class="text-[11px] text-slate-400 truncate">${meta.name} (${meta.symbol})</div>
                         </div>
-                    `;
-                    modalList.appendChild(btn);
-                }
+                    </div>
+                    <div class="text-blue-500 opacity-60 group-hover:opacity-100 transition-opacity pl-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </div>
+                `;
+                modalList.appendChild(btn);
             });
         }
 
@@ -1440,9 +1636,10 @@
                 conversionsOut.innerHTML = '';
                 activeCurrencies.filter(c => c !== baseCurrency).slice(0, 3).forEach(c => {
                     const convVal = convertValue(grandTotal, baseCurrency, c);
+                    const meta = getCurrencyMeta(c);
                     const div = document.createElement('div');
                     div.className = 'flex justify-between items-center';
-                    div.innerHTML = `<span>≈ ${getCurrencyName(c)}:</span><span class="font-mono font-semibold text-slate-700 dark:text-slate-300">${formatValue(convVal)} ${c}</span>`;
+                    div.innerHTML = `<span class="flex items-center gap-1.5"><span>${meta.flag}</span> <span>${meta.country} (${c}):</span></span><span class="font-mono font-semibold text-slate-700 dark:text-slate-300">${formatValue(convVal)} ${c}</span>`;
                     conversionsOut.appendChild(div);
                 });
             }
@@ -1481,9 +1678,10 @@
                 conversionsOut.innerHTML = '';
                 activeCurrencies.filter(c => c !== baseCurrency).slice(0, 3).forEach(c => {
                     const convVal = convertValue(perPerson, baseCurrency, c);
+                    const meta = getCurrencyMeta(c);
                     const div = document.createElement('div');
                     div.className = 'flex justify-between items-center';
-                    div.innerHTML = `<span>Each in ${c}:</span><span class="font-mono font-semibold text-emerald-600 dark:text-emerald-400">${formatValue(convVal)} ${c}</span>`;
+                    div.innerHTML = `<span class="flex items-center gap-1.5"><span>${meta.flag}</span> <span>Each in ${meta.country}:</span></span><span class="font-mono font-semibold text-emerald-600 dark:text-emerald-400">${formatValue(convVal)} ${c}</span>`;
                     conversionsOut.appendChild(div);
                 });
             }
@@ -1501,7 +1699,8 @@
 
             activeCurrencies.filter(c => c !== baseCurrency).slice(0, 2).forEach(c => {
                 const convVal = convertValue(perPerson, baseCurrency, c);
-                msg += `(≈ ${formatValue(convVal)} ${c} each)\n`;
+                const meta = getCurrencyMeta(c);
+                msg += `(≈ ${meta.flag} ${formatValue(convVal)} ${c} - ${meta.country})\n`;
             });
             msg += `via Kesher Money (money.kesher.me)`;
 
@@ -1628,8 +1827,9 @@
             chartCurrency = code;
             chartTimeframe = '1W';
             
-            document.getElementById('chart-modal-title').innerText = `${code} vs ${baseCurrency}`;
-            document.getElementById('chart-modal-subtitle').innerText = getCurrencyName(code);
+            const meta = getCurrencyMeta(code);
+            document.getElementById('chart-modal-title').innerHTML = `${meta.flag} ${code} vs ${baseCurrency}`;
+            document.getElementById('chart-modal-subtitle').innerText = `${meta.country} — ${meta.name}`;
             
             chartModal.classList.remove('hidden');
             chartModal.classList.add('flex');
