@@ -828,14 +828,38 @@
             MOP: { country: "Macau", flag: "🇲🇴", name: "Macanese Pataca", symbol: "MOP$" }
         };
 
+        const CURRENCY_CC = {
+            USD: 'us', EUR: 'eu', ILS: 'il', THB: 'th', CRC: 'cr', MXN: 'mx', GBP: 'gb', JPY: 'jp',
+            CAD: 'ca', AUD: 'au', CHF: 'ch', ARS: 'ar', BRL: 'br', COP: 'co', PEN: 'pe', CLP: 'cl',
+            VND: 'vn', IDR: 'id', INR: 'in', TRY: 'tr', ZAR: 'za', AED: 'ae', SGD: 'sg', PHP: 'ph',
+            MYR: 'my', EGP: 'eg', CZK: 'cz', HUF: 'hu', PLN: 'pl', SEK: 'se', NOK: 'no', DKK: 'dk',
+            NZD: 'nz', GEL: 'ge', JOD: 'jo', RSD: 'rs', BAM: 'ba', ALL: 'al', MAD: 'ma', KHR: 'kh',
+            LAK: 'la', LKR: 'lk', NPR: 'np', KRW: 'kr', CNY: 'cn', HKD: 'hk', TWD: 'tw', SAR: 'sa',
+            QAR: 'qa', OMR: 'om', KWD: 'kw', BHD: 'bh', GTQ: 'gt', PAB: 'pa', DOP: 'do', ISK: 'is',
+            RON: 'ro', BGN: 'bg', MKD: 'mk', KES: 'ke', TZS: 'tz', UGX: 'ug', RWF: 'rw', MUR: 'mu',
+            UYU: 'uy', BOB: 'bo', PYG: 'py', JMD: 'jm', TTD: 'tt', BBD: 'bb', BZD: 'bz', FJD: 'fj',
+            MNT: 'mn', KZT: 'kz', UZS: 'uz', AMD: 'am', AZN: 'az', MDL: 'md', UAH: 'ua', PKR: 'pk',
+            BDT: 'bd', MMK: 'mm', MVR: 'mv', BND: 'bn', NGN: 'ng', GHS: 'gh', ETB: 'et', XOF: 'sn',
+            XAF: 'cm', XCD: 'ag', ANG: 'cw', AWG: 'aw', BSD: 'bs', CUP: 'cu', HNL: 'hn', NIO: 'ni',
+            LBP: 'lb', IQD: 'iq', DZD: 'dz', TND: 'tn', LYD: 'ly', MZN: 'mz', NAD: 'na', BWP: 'bw',
+            ZMW: 'zm', MGA: 'mg', SCR: 'sc', CVE: 'cv', PGK: 'pg', WST: 'ws', VUV: 'vu', TOP: 'to',
+            SBD: 'sb', BTN: 'bt', MOP: 'mo'
+        };
+
         function getCurrencyMeta(code) {
-            if (CURRENCY_DATA[code]) return CURRENCY_DATA[code];
-            
-            let flag = '🌐';
-            if (code && code.length >= 2) {
-                flag = getFlagEmoji(code.slice(0, 2));
+            const cc = CURRENCY_CC[code] || (code && code.length >= 2 ? code.slice(0, 2).toLowerCase() : 'us');
+            const flagUrl = `flags/${cc}.png`;
+            const flagEmoji = getFlagEmoji(cc);
+
+            if (CURRENCY_DATA[code]) {
+                return {
+                    ...CURRENCY_DATA[code],
+                    cc: cc,
+                    flagUrl: flagUrl,
+                    flagEmoji: flagEmoji
+                };
             }
-            
+
             let fallbackName = code;
             try {
                 fallbackName = currencyDisplayNames.of(code) || code;
@@ -843,10 +867,28 @@
 
             return {
                 country: fallbackName,
-                flag: flag,
+                cc: cc,
+                flag: flagEmoji,
+                flagEmoji: flagEmoji,
+                flagUrl: flagUrl,
                 name: fallbackName,
                 symbol: code
             };
+        }
+
+        function renderFlagHtml(meta, sizeClass = 'w-11 h-11') {
+            const cc = meta.cc || 'us';
+            return `
+                <div class="flex-shrink-0 ${sizeClass} rounded-2xl overflow-hidden flex items-center justify-center bg-slate-100 dark:bg-slate-800 shadow-sm border border-slate-200/80 dark:border-slate-700/80 select-none">
+                    <img 
+                        src="${meta.flagUrl}" 
+                        alt="${meta.country}" 
+                        class="w-full h-full object-cover" 
+                        loading="lazy"
+                        onerror="this.onerror=null; this.src='https://flagcdn.com/w80/${cc}.png'; this.onerror=function(){this.parentElement.innerHTML='<span class=\\'text-xs font-bold text-slate-500\\'>${cc.toUpperCase()}</span>';};"
+                    >
+                </div>
+            `;
         }
 
         function getCurrencyName(code) {
@@ -1060,9 +1102,7 @@
                     <div class="cursor-grab text-slate-300 hover:text-slate-500 dark:hover:text-slate-400 active:cursor-grabbing">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
                     </div>
-                    <div class="flex-shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center text-2xl bg-slate-100 dark:bg-slate-800 shadow-sm border border-slate-200/80 dark:border-slate-700/80 select-none">
-                        ${meta.flag}
-                    </div>
+                    ${renderFlagHtml(meta, 'w-11 h-11')}
                     <div class="flex-grow min-w-0">
                         <div class="flex items-center justify-between mb-1 gap-1">
                             <div class="flex items-center gap-1.5 flex-wrap min-w-0">
@@ -1136,7 +1176,7 @@
             const meta = getCurrencyMeta(code);
             codeEl.textContent = code;
             nameEl.textContent = `${meta.country} — ${meta.name}`;
-            flagEl.textContent = meta.flag;
+            flagEl.innerHTML = `<img src="${meta.flagUrl}" alt="${meta.country}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://flagcdn.com/w80/${meta.cc}.png';">`;
             flagEl.style.backgroundColor = '';
 
             officialEl.textContent = formatValue(officialRate) + ' ' + code;
@@ -1507,9 +1547,7 @@
                 btn.onclick = () => addCurrency(code);
                 btn.innerHTML = `
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl bg-slate-100 dark:bg-slate-800 shadow-sm border border-slate-200/80 dark:border-slate-700 select-none flex-shrink-0">
-                            ${meta.flag}
-                        </div>
+                        ${renderFlagHtml(meta, 'w-10 h-10')}
                         <div class="min-w-0">
                             <div class="font-bold text-sm flex items-center gap-1.5 flex-wrap">
                                 <span>${code}</span>
@@ -1639,7 +1677,7 @@
                     const meta = getCurrencyMeta(c);
                     const div = document.createElement('div');
                     div.className = 'flex justify-between items-center';
-                    div.innerHTML = `<span class="flex items-center gap-1.5"><span>${meta.flag}</span> <span>${meta.country} (${c}):</span></span><span class="font-mono font-semibold text-slate-700 dark:text-slate-300">${formatValue(convVal)} ${c}</span>`;
+                    div.innerHTML = `<span class="flex items-center gap-1.5"><img src="${meta.flagUrl}" alt="${meta.country}" class="w-4 h-3 object-cover rounded shadow-xs inline-block" onerror="this.onerror=null; this.src='https://flagcdn.com/w80/${meta.cc}.png';"> <span>${meta.country} (${c}):</span></span><span class="font-mono font-semibold text-slate-700 dark:text-slate-300">${formatValue(convVal)} ${c}</span>`;
                     conversionsOut.appendChild(div);
                 });
             }
@@ -1681,7 +1719,7 @@
                     const meta = getCurrencyMeta(c);
                     const div = document.createElement('div');
                     div.className = 'flex justify-between items-center';
-                    div.innerHTML = `<span class="flex items-center gap-1.5"><span>${meta.flag}</span> <span>Each in ${meta.country}:</span></span><span class="font-mono font-semibold text-emerald-600 dark:text-emerald-400">${formatValue(convVal)} ${c}</span>`;
+                    div.innerHTML = `<span class="flex items-center gap-1.5"><img src="${meta.flagUrl}" alt="${meta.country}" class="w-4 h-3 object-cover rounded shadow-xs inline-block" onerror="this.onerror=null; this.src='https://flagcdn.com/w80/${meta.cc}.png';"> <span>Each in ${meta.country}:</span></span><span class="font-mono font-semibold text-emerald-600 dark:text-emerald-400">${formatValue(convVal)} ${c}</span>`;
                     conversionsOut.appendChild(div);
                 });
             }
@@ -1828,7 +1866,7 @@
             chartTimeframe = '1W';
             
             const meta = getCurrencyMeta(code);
-            document.getElementById('chart-modal-title').innerHTML = `${meta.flag} ${code} vs ${baseCurrency}`;
+            document.getElementById('chart-modal-title').innerHTML = `<span class="inline-flex items-center gap-2"><img src="${meta.flagUrl}" alt="${meta.country}" class="w-6 h-4 object-cover rounded shadow-xs" onerror="this.onerror=null; this.src='https://flagcdn.com/w80/${meta.cc}.png';"> <span>${code} vs ${baseCurrency}</span></span>`;
             document.getElementById('chart-modal-subtitle').innerText = `${meta.country} — ${meta.name}`;
             
             chartModal.classList.remove('hidden');

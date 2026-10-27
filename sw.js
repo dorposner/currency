@@ -1,7 +1,7 @@
 // Kesher Money (https://money.kesher.me) — Service Worker 2.0
 // Offline-first PWA caching & resilient fallback engine
 
-const CACHE_NAME = 'kesher-money-v2.0.0';
+const CACHE_NAME = 'kesher-money-v2.1.0';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -110,7 +110,24 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 2. Handle CDN Scripts (Tailwind, Chart.js, Google Fonts) with Stale-While-Revalidate
+    // 2. Handle Local Country Flags & FlagCDN (Cache-First)
+    if (url.pathname.includes('/flags/') || url.hostname.includes('flagcdn.com')) {
+        event.respondWith(
+            caches.match(event.request).then((cachedResponse) => {
+                if (cachedResponse) return cachedResponse;
+                return fetch(event.request).then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        const responseClone = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+                    }
+                    return networkResponse;
+                }).catch(() => cachedResponse);
+            })
+        );
+        return;
+    }
+
+    // 3. Handle CDN Scripts (Tailwind, Chart.js, Google Fonts) with Stale-While-Revalidate
     if (url.hostname.includes('cdn.tailwindcss.com') || 
         url.hostname.includes('cdn.jsdelivr.net') || 
         url.hostname.includes('fonts.googleapis.com') || 
